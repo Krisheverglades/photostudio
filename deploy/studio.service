@@ -1,0 +1,15 @@
+[Unit]
+Description=Studio photo/booking app
+After=network.target
+
+[Service]
+# Adjust these two paths and the user to match your VPS setup
+User=YOUR_VPS_USERNAME
+WorkingDirectory=/home/YOUR_VPS_USERNAME/photostudio
+ExecStart=/home/YOUR_VPS_USERNAME/photostudio/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=3
+EnvironmentFile=/home/YOUR_VPS_USERNAME/photostudio/.env
+
+[Install]
+WantedBy=multi-user.target

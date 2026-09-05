@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — {{ pw and "Studio" }}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="nav">
+    <div class="brand">Studio Admin</div>
+    <div><a href="/">View site</a></div>
+  </div>
+
+  <div class="panel" style="max-width: 640px;">
+    <h2>New shoot</h2>
+    <p style="color: var(--smoke); margin: 10px 0 26px;">
+      Upload the raw photos from a shoot. They'll be auto-cropped, auto-edited,
+      the best {{ "N" }} selected, and a private gallery link emailed to the client automatically.
+    </p>
+
+    <form method="post" action="/admin/create_shoot" enctype="multipart/form-data">
+      <input type="hidden" name="pw" value="{{ pw }}">
+      <div class="field">
+        <label>Client name</label>
+        <input type="text" name="client_name" required>
+      </div>
+      <div class="field">
+        <label>Client email</label>
+        <input type="email" name="client_email" required>
+      </div>
+      <div class="field">
+        <label>Shoot title</label>
+        <input type="text" name="shoot_title" placeholder="e.g. Anna & Marco — Wedding" required>
+      </div>
+      <div class="field">
+        <label>How many "best of" photos to select?</label>
+        <input type="number" name="best_count" value="100" min="1" required>
+      </div>
+      <div class="field">
+        <label>Edit style</label>
+        <select name="style">
+          <option value="natural">Natural</option>
+          <option value="warm">Warm</option>
+          <option value="moody">Moody</option>
+          <option value="bright_airy">Bright &amp; airy</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Crop to aspect ratio (optional)</label>
+        <select name="target_aspect">
+          <option value="">Keep original</option>
+          <option value="4:5">4:5 (portrait / Instagram)</option>
+          <option value="1:1">1:1 (square)</option>
+          <option value="16:9">16:9 (widescreen)</option>
+          <option value="3:2">3:2 (classic photo)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Photos</label>
+        <input type="file" name="files" multiple accept="image/*" required>
+      </div>
+      <button type="submit" class="btn">Process &amp; deliver</button>
+    </form>
+  </div>
+
+  <div class="panel" style="max-width: 900px;">
+    <h2>Past shoots</h2>
+    <table style="margin-top: 20px;">
+      <tr><th>Title</th><th>Status</th><th>Best/Total</th><th>Email sent</th><th>Gallery link</th></tr>
+      {% for s in shoots %}
+      <tr>
+        <td>{{ s.title }}</td>
+        <td><span class="tag {{ 'ready' if s.status == 'ready' else '' }}">{{ s.status }}</span></td>
+        <td>{{ s.best_count }} / {{ s.total_photos }}</td>
+        <td>{{ "Yes" if s.email_sent else "No" }}</td>
+        <td><a href="/gallery/{{ s.access_key }}" target="_blank">/gallery/{{ s.access_key }}</a></td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  <div class="panel" style="max-width: 900px; padding-top: 0;">
+    <p style="color: var(--smoke); font-size: 0.8rem;">Running version: {{ version }}</p>
+  </div>
+</body>
+</html>

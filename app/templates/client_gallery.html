@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ shoot_title }} — {{ studio_name }}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="nav">
+    <div class="brand">{{ studio_name }}</div>
+    <div><span class="tag ready">Private gallery</span></div>
+  </div>
+
+  <div class="hero">
+    <h1>{{ shoot_title }}</h1>
+    <p>Hi {{ client_name }} — here are your favorites, selected and edited from the full shoot.
+       Click any photo to view full size and save it.</p>
+  </div>
+
+  <div class="grid">
+    {% if images %}
+      {% for img in images %}
+        <a href="/media/{{ media_dir }}/{{ img }}" download>
+          <img src="/media/{{ media_dir }}/{{ img }}" alt="{{ shoot_title }} photo" loading="lazy">
+        </a>
+      {% endfor %}
+    {% else %}
+      <p style="grid-column: 1/-1; color: var(--smoke); padding: 2vw 0;">
+        Your gallery is still being prepared — check back shortly.
+      </p>
+    {% endif %}
+  </div>
+</body>
+</html>
