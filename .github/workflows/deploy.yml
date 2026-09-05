@@ -1,0 +1,40 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    outputs:
+      new_tag: ${{ steps.tag_version.outputs.new_tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Auto-bumps a semver tag (v0.1.0 -> v0.1.1 by default) on every push
+      # to main, and creates a matching GitHub Release. Add "#major" or
+      # "#minor" to a commit message to bump those instead of patch.
+      - name: Bump version and push tag
+        id: tag_version
+        uses: anothrNick/github-tag-action@1.71.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEFAULT_BUMP: patch
+          WITH_V: true
+
+  deploy:
+    needs: tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH in and deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            bash ~/photostudio/deploy/deploy.sh

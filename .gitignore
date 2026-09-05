@@ -1,0 +1,10 @@
+venv/
+__pycache__/
+*.pyc
+.env
+app/studio.db
+app/uploads/
+app/processed/
+app/token.json
+VERSION
+.DS_Store

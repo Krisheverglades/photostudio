@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book a session — {{ studio_name }}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="nav">
+    <div class="brand"><a href="/" style="color:inherit;">{{ studio_name }}</a></div>
+    <div><a href="/">Work</a></div>
+  </div>
+
+  <div class="panel">
+    <h2>Book a session</h2>
+    <p style="color: var(--smoke); margin: 10px 0 30px;">
+      Pick an open slot. Times shown are the next 14 days, greyed slots are already booked.
+    </p>
+
+    {% if request.query_params.get('confirmed') %}
+      <div class="notice">Your session is booked — a confirmation email is on its way.</div>
+    {% endif %}
+
+    <form method="post" action="/book" id="bookForm">
+      <div class="field">
+        <label>Your name</label>
+        <input type="text" name="name" required>
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" name="email" required>
+      </div>
+      <div class="field">
+        <label>Anything I should know? (location, occasion, headcount...)</label>
+        <textarea name="notes" rows="3"></textarea>
+      </div>
+
+      <div class="field">
+        <label>Choose a time</label>
+        <div class="slots" id="slotContainer"></div>
+        <input type="hidden" name="start_time" id="start_time" required>
+      </div>
+
+      <button type="submit" class="btn">Confirm booking</button>
+    </form>
+  </div>
+
+  <script>
+    // Busy ranges pulled server-side from Google Calendar via freebusy API.
+    const busy = {{ busy_slots | tojson }};
+
+    function overlapsBusy(slotStart, slotEnd) {
+      return busy.some(b => {
+        const bStart = new Date(b.start);
+        const bEnd = new Date(b.end);
+        return slotStart < bEnd && slotEnd > bStart;
+      });
+    }
+
+    const container = document.getElementById('slotContainer');
+    const hiddenInput = document.getElementById('start_time');
+    const now = new Date();
+    const hours = [9, 11, 13, 15, 17]; // studio's bookable hours — adjust to taste
+
+    for (let d = 1; d <= 14; d++) {
+      const day = new Date(now);
+      day.setDate(day.getDate() + d);
+      hours.forEach(h => {
+        const slotStart = new Date(day);
+        slotStart.setHours(h, 0, 0, 0);
+        const slotEnd = new Date(slotStart);
+        slotEnd.setHours(h + 1);
+
+        const btn = document.createElement('div');
+        btn.className = 'slot';
+        const label = slotStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+          + ' ' + slotStart.toLocaleTimeString(undefined, { hour: 'numeric' });
+        btn.textContent = label;
+
+        if (overlapsBusy(slotStart, slotEnd)) {
+          btn.classList.add('busy');
+        } else {
+          btn.addEventListener('click', () => {
+            document.querySelectorAll('.slot.selected').forEach(el => el.classList.remove('selected'));
+            btn.classList.add('selected');
+            hiddenInput.value = slotStart.toISOString();
+          });
+        }
+        container.appendChild(btn);
+      });
+    }
+  </script>
+</body>
+</html>

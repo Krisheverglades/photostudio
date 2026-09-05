@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ studio_name }}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="nav">
+    <div class="brand">{{ studio_name }}</div>
+    <div>
+      <a href="/">Work</a>
+      <a href="/book" class="cta">Book a session</a>
+    </div>
+  </div>
+
+  <div class="hero">
+    <h1>{{ tagline or "Photographs that hold onto a moment." }}</h1>
+    <p>A selected collection of recent work. Every session is culled, edited,
+       and delivered to a private gallery — book a date below to start yours.</p>
+  </div>
+
+  <div class="grid">
+    {% if images %}
+      {% for img in images %}
+        <a href="/media/_portfolio/{{ img }}" target="_blank">
+          <img src="/media/_portfolio/{{ img }}" alt="Portfolio photo" loading="lazy">
+        </a>
+      {% endfor %}
+    {% else %}
+      <p style="grid-column: 1/-1; color: var(--smoke); padding: 2vw 0;">
+        No portfolio images yet — add some from the admin panel after your first shoot.
+      </p>
+    {% endif %}
+  </div>
+</body>
+</html>

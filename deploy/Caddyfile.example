@@ -1,0 +1,8 @@
+# Caddy automatically gets and renews an HTTPS certificate for you.
+# Replace yourdomain.com with your real domain, then:
+#   sudo cp Caddyfile.example /etc/caddy/Caddyfile
+#   sudo systemctl reload caddy
+
+yourdomain.com {
+    reverse_proxy 127.0.0.1:8000
+}
