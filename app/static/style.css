@@ -243,7 +243,7 @@ td form { margin: 0; }
 .portfolio-page .hero h1 { color: #fff; text-shadow: 0 4px 30px rgba(0,0,0,.35); }
 .portfolio-page .hero p { color: #c4beb4; }
 .portfolio-page .hero::after { color: #aaa49b; }
-.portfolio-page .hero-slideshow::after { background: linear-gradient(90deg, rgba(8,8,8,.9), rgba(8,8,8,.58) 52%, rgba(8,8,8,.18)); }
+.portfolio-page .hero-slideshow::after { background: linear-gradient(90deg, rgba(8,8,8,.84), rgba(8,8,8,.38) 52%, rgba(8,8,8,.08)); }
 .portfolio-page .section-heading h2 { color: #fff; }
 .portfolio-page .section-heading span { color: #99938b; }
 .portfolio-page .grid { background: #080808; }
@@ -291,7 +291,8 @@ td form { margin: 0; }
   filter: blur(10px);
 }
 .portfolio-page .product-hero::after { content: 'EST. 2024'; bottom: 48px; }
-.portfolio-page .hero-slideshow { opacity: .08; inset: 7% 0 0 42%; mask-image: linear-gradient(90deg, transparent, #000 35%); }
+.portfolio-page .hero-slideshow { opacity: .82; inset: 7% 0 0 30%; mask-image: linear-gradient(90deg, transparent, #000 18%); }
+.portfolio-page .hero-slide.active { opacity: .42; }
 .portfolio-page .hero-content { max-width: 650px; }
 .portfolio-page .hero-pill { display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(155,212,92,.5); border-radius: 999px; padding: 8px 12px; color: #d5e8bf; margin-bottom: 26px; }
 .pulse-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--glow-green); box-shadow: 0 0 14px var(--glow-green); }
