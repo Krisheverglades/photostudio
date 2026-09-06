@@ -5,7 +5,14 @@
   <title>Admin</title>
   <link rel="stylesheet" href="/static/style.css">
 </head>
-<body>
+<body class="studio-page">
+  {% if background_images %}
+  <div class="studio-backdrop" aria-hidden="true">
+    {% for img in background_images %}
+    <img src="/media/_portfolio/{{ img }}" alt="">
+    {% endfor %}
+  </div>
+  {% endif %}
   <div class="nav">
     <a class="brand" href="/"><span class="brand-mark">/</span>Studio</a>
   </div>

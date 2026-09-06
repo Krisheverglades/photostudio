@@ -39,6 +39,17 @@ STUDIO_TAGLINE = os.getenv("STUDIO_TAGLINE", "")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "change-me")
 
 
+def get_portfolio_images(limit: int = 10) -> list[str]:
+    portfolio_dir = os.path.join(PROCESSED_ROOT, "_portfolio")
+    os.makedirs(portfolio_dir, exist_ok=True)
+    images = [
+        name
+        for name in os.listdir(portfolio_dir)
+        if os.path.isfile(os.path.join(portfolio_dir, name))
+    ]
+    return random.sample(images, min(limit, len(images)))
+
+
 def admin_redirect(password: str) -> RedirectResponse:
     return RedirectResponse(
         url=f"/admin?{urlencode({'pw': password})}",
@@ -60,14 +71,7 @@ def portfolio(request: Request):
     with get_session() as session:
         # "Portfolio" pulls from any shoot folder marked as public via a
         # `portfolio/` subfolder you curate manually — see README.
-        portfolio_dir = os.path.join(PROCESSED_ROOT, "_portfolio")
-        os.makedirs(portfolio_dir, exist_ok=True)
-        images = [
-            name
-            for name in os.listdir(portfolio_dir)
-            if os.path.isfile(os.path.join(portfolio_dir, name))
-        ]
-        images = random.sample(images, min(10, len(images)))
+        images = get_portfolio_images()
     return templates.TemplateResponse(
         "portfolio.html",
         {
@@ -84,7 +88,12 @@ def book_page(request: Request):
     busy = calendar_utils.get_busy_slots()
     return templates.TemplateResponse(
         "book.html",
-        {"request": request, "studio_name": STUDIO_NAME, "busy_slots": busy},
+        {
+            "request": request,
+            "studio_name": STUDIO_NAME,
+            "busy_slots": busy,
+            "background_images": get_portfolio_images(6),
+        },
     )
 
 
@@ -262,6 +271,7 @@ def admin_home(request: Request, pw: str = ""):
             {
                 "request": request,
                 "error": "Incorrect admin password." if pw else "",
+                "background_images": get_portfolio_images(6),
             },
         )
     with get_session() as session:
@@ -293,6 +303,7 @@ def admin_home(request: Request, pw: str = ""):
             "appointment_stats": appointment_stats,
             "clients": clients,
             "version": get_version(),
+            "background_images": get_portfolio_images(6),
         },
     )
 

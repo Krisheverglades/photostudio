@@ -200,6 +200,46 @@ td form { margin: 0; }
 .upcoming-info strong { font-size: .95rem; }
 .upcoming-info span { color: var(--muted); font-size: .78rem; }
 
+.studio-page {
+  position: relative;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background: #151a20;
+}
+.studio-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  display: flex;
+  gap: 24px;
+  width: 135%;
+  opacity: .28;
+  filter: saturate(.82) contrast(1.04);
+  animation: studio-backdrop-scroll 38s linear infinite alternate;
+}
+.studio-backdrop::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(21,26,32,.78), rgba(21,26,32,.36), rgba(21,26,32,.72));
+}
+.studio-backdrop img {
+  width: 23vw;
+  min-width: 230px;
+  height: 100vh;
+  object-fit: cover;
+}
+@keyframes studio-backdrop-scroll {
+  from { transform: translateX(-9%); }
+  to { transform: translateX(0); }
+}
+.studio-page .nav,
+.studio-page .admin-header,
+.studio-page .dashboard-stats,
+.studio-page .panel { position: relative; z-index: 1; }
+.studio-page .panel { background: rgba(255,253,248,.93); backdrop-filter: blur(14px); }
+.studio-page .stat-card { background: rgba(255,253,248,.93); backdrop-filter: blur(12px); }
+
 @media (max-width: 720px) {
   .nav { padding: 20px 5vw; }
   .nav-links { gap: 12px; font-size: .65rem; }
