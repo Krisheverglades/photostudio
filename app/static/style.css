@@ -11,6 +11,12 @@
   --green: #53675d;
   --white: #fffdf8;
   --shadow: 0 22px 60px rgba(23, 23, 21, .12);
+  .portfolio-page .hero.product-hero { min-height: auto; display: block; padding-top: 80px; padding-bottom: 30px; }
+  .portfolio-page .hero-slideshow { inset: 0; opacity: .13; }
+  .hero-stack { height: 330px; margin-top: 55px; transform: scale(.82); transform-origin: top left; width: 122%; }
+  .workflow-intro { padding-top: 50px; }
+  .workflow-grid { grid-template-columns: 1fr; padding-bottom: 65px; }
+  .workflow-card { min-height: 270px; }
 }
 
 * { box-sizing: border-box; }
@@ -241,3 +247,87 @@ td form { margin: 0; }
 .portfolio-page .grid a:hover img { filter: saturate(1.08) contrast(1.04); }
 .portfolio-page .btn { background: #f6f2eb; color: #080808; }
 .portfolio-page .btn:hover { background: #d79b60; color: #080808; }
+
+/* The public site uses a product-like dark layout while keeping the studio's
+   editorial typography and photography at the center. */
+.portfolio-page {
+  --glow-blue: #2468ff;
+  --glow-green: #9bd45c;
+  --glow-orange: #f08a47;
+  background:
+    radial-gradient(circle at 78% 19%, rgba(36,104,255,.16), transparent 27rem),
+    radial-gradient(circle at 22% 72%, rgba(155,212,92,.08), transparent 24rem),
+    #080808;
+  overflow-x: hidden;
+}
+.portfolio-page .nav { max-width: 1240px; padding-top: 24px; padding-bottom: 24px; }
+.portfolio-page .brand { font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.portfolio-page .brand-mark { color: var(--glow-green); }
+.portfolio-page .hero.product-hero {
+  max-width: 1240px;
+  min-height: 680px;
+  padding: 100px 5vw 110px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, .9fr);
+  align-items: center;
+  gap: 50px;
+  overflow: visible;
+}
+.portfolio-page .product-hero::before {
+  content: '';
+  position: absolute;
+  width: 470px;
+  height: 470px;
+  right: 10%;
+  top: 12%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(36,104,255,.24), rgba(155,212,92,.08) 42%, transparent 68%);
+  filter: blur(10px);
+}
+.portfolio-page .product-hero::after { content: 'EST. 2024'; bottom: 48px; }
+.portfolio-page .hero-slideshow { opacity: .08; inset: 7% 0 0 42%; mask-image: linear-gradient(90deg, transparent, #000 35%); }
+.portfolio-page .hero-content { max-width: 650px; }
+.portfolio-page .hero-pill { display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(155,212,92,.5); border-radius: 999px; padding: 8px 12px; color: #d5e8bf; margin-bottom: 26px; }
+.pulse-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--glow-green); box-shadow: 0 0 14px var(--glow-green); }
+.portfolio-page .hero h1 { max-width: 720px; font-size: clamp(3.6rem, 7vw, 7.6rem); line-height: .92; }
+.portfolio-page .hero h1 em { color: #b7e776; }
+.portfolio-page .hero p { max-width: 510px; font-size: 1.03rem; }
+.hero-note { color: #888b92; font: .68rem 'DM Mono', monospace; letter-spacing: .12em; text-transform: uppercase; }
+.hero-stack { position: relative; z-index: 1; height: 430px; }
+.stack-card { position: absolute; display: block; overflow: hidden; border: 1px solid rgba(255,255,255,.5); box-shadow: 0 25px 70px rgba(0,0,0,.6); transition: transform .4s ease; }
+.stack-card:hover { transform: translateY(-12px) rotate(0deg) !important; z-index: 5; }
+.stack-card img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.stack-card-1 { width: 250px; height: 325px; top: 33px; left: 22%; transform: rotate(-7deg); z-index: 3; }
+.stack-card-2 { width: 265px; height: 350px; top: 0; right: 1%; transform: rotate(5deg); z-index: 2; }
+.stack-card-3 { width: 170px; height: 215px; bottom: 7px; left: 4%; transform: rotate(5deg); z-index: 4; }
+.stack-card-4 { width: 190px; height: 240px; bottom: 30px; right: 7%; transform: rotate(-6deg); z-index: 1; }
+.stack-caption { position: absolute; right: 0; bottom: -30px; color: #777b80; font: .62rem 'DM Mono', monospace; letter-spacing: .2em; line-height: 1.5; text-align: right; }
+.workflow-intro { max-width: 1240px; margin: 0 auto; padding: 95px 5vw 45px; }
+.workflow-intro h2 { max-width: 800px; color: #fff; font-size: clamp(2.7rem, 6vw, 5.8rem); line-height: .95; letter-spacing: -.06em; }
+.workflow-intro h2 em { color: #a9d871; }
+.workflow-intro p { max-width: 510px; color: #999da2; }
+.workflow-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; max-width: 1240px; margin: 0 auto; padding: 0 5vw 110px; }
+.workflow-card { min-height: 315px; padding: 25px; position: relative; overflow: hidden; border: 1px solid rgba(255,255,255,.13); background: #111315; }
+.workflow-card h3 { position: absolute; left: 25px; bottom: 48px; color: #fff; font-size: 2rem; margin: 0; }
+.workflow-card p { position: absolute; left: 25px; right: 25px; bottom: 21px; color: #979ba0; font-size: .8rem; margin: 0; }
+.workflow-number { color: #a9d871; font: .68rem 'DM Mono', monospace; letter-spacing: .15em; }
+.workflow-cull { background: linear-gradient(145deg, #17251b, #101211 65%); }
+.workflow-orbit { position: absolute; width: 210px; height: 210px; top: 35px; right: 34px; border: 1px solid rgba(155,212,92,.7); border-radius: 50%; box-shadow: 0 0 60px rgba(155,212,92,.18); }
+.workflow-orbit::after { content: ''; position: absolute; width: 10px; height: 10px; top: 20px; left: 34px; border-radius: 50%; background: #b9eb7c; box-shadow: 0 0 18px #b9eb7c; }
+.workflow-edit { background: linear-gradient(145deg, #171d2d, #101114 65%); }
+.workflow-bars { position: absolute; top: 62px; right: 45px; display: flex; align-items: end; gap: 9px; height: 120px; }
+.workflow-bars i { display: block; width: 16px; border-radius: 10px; background: linear-gradient(#5f8dff, #1e55d5); box-shadow: 0 0 25px rgba(36,104,255,.45); }
+.workflow-bars i:nth-child(1) { height: 52px; }.workflow-bars i:nth-child(2) { height: 95px; }.workflow-bars i:nth-child(3) { height: 72px; }
+.workflow-deliver { background: linear-gradient(145deg, #281b17, #121010 65%); }
+.workflow-arrow { position: absolute; top: 38px; right: 43px; color: #ffad72; font-size: 8rem; line-height: 1; transform: rotate(-20deg); text-shadow: 0 0 35px rgba(240,138,71,.5); }
+.portfolio-page .section-heading { max-width: 1240px; }
+.portfolio-page .grid { max-width: 1240px; }
+
+@media (max-width: 720px) {
+  .portfolio-page .hero.product-hero { min-height: auto; display: block; padding-top: 80px; padding-bottom: 30px; }
+  .portfolio-page .hero-slideshow { inset: 0; opacity: .13; }
+  .hero-stack { height: 330px; margin-top: 55px; transform: scale(.82); transform-origin: top left; width: 122%; }
+  .workflow-intro { padding-top: 50px; }
+  .workflow-grid { grid-template-columns: 1fr; padding-bottom: 65px; }
+  .workflow-card { min-height: 270px; }
+}

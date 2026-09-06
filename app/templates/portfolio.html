@@ -16,7 +16,7 @@
     </div>
   </div>
 
-  <div class="hero">
+  <div class="hero product-hero">
     {% if images %}
     <div class="hero-slideshow" aria-hidden="true">
       {% for img in images %}
@@ -27,14 +27,51 @@
     </div>
     {% endif %}
     <div class="hero-content">
-    <div class="eyebrow">Portraits · Stories · Light</div>
-    <h1>{{ tagline or "Photographs that hold onto a moment." }}</h1>
-    <p>A quiet, considered record of the people and places that matter. Every session is carefully edited and delivered to a private gallery.</p>
+    <div class="eyebrow hero-pill"><span class="pulse-dot"></span> Independent photography studio</div>
+    <h1>Less time sorting.<br><em>More time shooting.</em></h1>
+    <p>From first frame to private gallery, your session is shaped with a considered edit and delivered beautifully.</p>
     <div class="hero-actions">
-      <a href="/book" class="btn">Start a story <span aria-hidden="true">&nbsp;↗</span></a>
+      <a href="/book" class="btn">Plan your session <span aria-hidden="true">&nbsp;↗</span></a>
+      <span class="hero-note">Portraits · Weddings · Stories</span>
     </div>
     </div>
+    {% if images %}
+    <div class="hero-stack" aria-hidden="true">
+      {% for img in images[:4] %}
+      <a class="stack-card stack-card-{{ loop.index }}" href="/media/_portfolio/{{ img }}" target="_blank" rel="noopener">
+        <img src="/media/_portfolio/{{ img }}" alt="">
+      </a>
+      {% endfor %}
+      <div class="stack-caption">SELECTED<br>FRAMEWORKS</div>
+    </div>
+    {% endif %}
   </div>
+
+  <section class="workflow-intro">
+    <div class="eyebrow">A simpler studio workflow</div>
+    <h2>Everything after the shutter,<br><em>handled with intention.</em></h2>
+    <p>Upload your frames once. We make the cull, shape the look, and deliver a private gallery your clients can enjoy anywhere.</p>
+  </section>
+  <section class="workflow-grid">
+    <article class="workflow-card workflow-cull">
+      <span class="workflow-number">01</span>
+      <div class="workflow-orbit"></div>
+      <h3>Select</h3>
+      <p>The strongest frames rise to the top, ready for your final eye.</p>
+    </article>
+    <article class="workflow-card workflow-edit">
+      <span class="workflow-number">02</span>
+      <div class="workflow-bars"><i></i><i></i><i></i></div>
+      <h3>Shape</h3>
+      <p>Natural, warm, moody, or bright. Every gallery carries your point of view.</p>
+    </article>
+    <article class="workflow-card workflow-deliver">
+      <span class="workflow-number">03</span>
+      <div class="workflow-arrow">↗</div>
+      <h3>Deliver</h3>
+      <p>Send a private gallery where clients can view and download their photographs.</p>
+    </article>
+  </section>
 
   <div class="section-heading">
     <h2>Selected work</h2>
