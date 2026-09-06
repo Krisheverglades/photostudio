@@ -274,7 +274,7 @@ def download_gallery(access_key: str):
 # ───────────────────────── Admin: upload + process a shoot ─────────────────────────
 
 @app.get("/admin", response_class=HTMLResponse)
-def admin_home(request: Request, pw: str = ""):
+def admin_home(request: Request, pw: str = "", page: str = "dashboard"):
     if pw != ADMIN_PASSWORD:
         return templates.TemplateResponse(
             "admin_login.html",
@@ -315,13 +315,24 @@ def admin_home(request: Request, pw: str = ""):
             "version": get_version(),
             "background_images": get_portfolio_images(6),
             "email_configured": email_utils.smtp_configured(),
+            "page": page,
         },
     )
 
 
+@app.get("/portfolio", response_class=HTMLResponse)
+def portfolio_workspace(request: Request, pw: str = ""):
+    return admin_home(request, pw, "portfolio")
+
+
+@app.get("/dashboard", response_class=HTMLResponse)
+def dashboard_workspace(request: Request, pw: str = ""):
+    return admin_home(request, pw, "dashboard")
+
+
 @app.get("/studio", response_class=HTMLResponse)
 def studio_home(request: Request, pw: str = ""):
-    return admin_home(request, pw)
+    return RedirectResponse(url=f"/dashboard?{urlencode({'pw': pw})}", status_code=303)
 
 
 @app.post("/admin/create_shoot")

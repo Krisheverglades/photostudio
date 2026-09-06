@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin — {{ pw and "Studio" }}</title>
+  <title>{{ "Portfolio" if page == "portfolio" else "Dashboard" }} — Studio</title>
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body class="studio-page">
@@ -15,14 +15,23 @@
   </div>
   {% endif %}
   <div class="nav">
-    <a class="brand" href="/"><span class="brand-mark">/</span>Studio Admin</a>
-    <div class="nav-links"><a href="/">View site ↗</a></div>
+    <a class="brand" href="/"><span class="brand-mark">/</span>{{ "Portfolio" if page == "portfolio" else "Dashboard" }}</a>
+    <div class="nav-links">
+      <a href="/portfolio?pw={{ pw }}">Portfolio</a>
+      <a href="/dashboard?pw={{ pw }}">Dashboard</a>
+      <a href="/">View site ↗</a>
+    </div>
   </div>
 
   <div class="admin-header">
     <div class="eyebrow">Studio workspace</div>
-    <h1>Make room for<br><em>good light.</em></h1>
-    <p>Upload a new shoot, shape the edit, and send a private gallery.</p>
+    {% if page == "portfolio" %}
+    <h1>Shape the<br><em>portfolio.</em></h1>
+    <p>Process a new delivery, curate portfolio work, and send private galleries.</p>
+    {% else %}
+    <h1>Keep every<br><em>session moving.</em></h1>
+    <p>Review bookings, update session status, and keep your studio calendar clear.</p>
+    {% endif %}
   </div>
   {% if request.query_params.get('email') == 'sent' %}
   <div class="panel-wide notice">Gallery email sent successfully with the private link and access key.</div>
@@ -68,6 +77,7 @@
     {% endif %}
   </div>
 
+  {% if page == "portfolio" %}
   <div class="panel">
     <div class="eyebrow">New delivery</div>
     <h2>Process a shoot</h2>
@@ -170,7 +180,9 @@
       {% endfor %}
     </table>
   </div>
+  {% endif %}
 
+  {% if page == "dashboard" %}
   <div class="panel panel-wide">
     <div class="section-heading" style="padding: 0 0 24px;">
       <h2>Booking workflow</h2>
@@ -201,6 +213,7 @@
       {% endfor %}
     </table>
   </div>
+  {% endif %}
 
   <div class="panel panel-wide" style="padding-top: 0; margin-top: -75px; box-shadow: none; border: 0; background: transparent;">
     <p style="color: var(--muted); font: .7rem 'DM Mono', monospace;">RUNNING VERSION · {{ version }}</p>
