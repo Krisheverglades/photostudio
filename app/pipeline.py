@@ -15,6 +15,7 @@ model trained on photos you've personally picked in the past.
 from __future__ import annotations
 
 import os
+import shutil
 from dataclasses import dataclass, field
 
 import cv2
@@ -186,6 +187,7 @@ def auto_edit(
       trained model — this is the deterministic baseline.
     """
     img = Image.open(src_path)
+    source_format = img.format
     img = ImageOps.exif_transpose(img)  # respect camera orientation
 
     if target_aspect:
@@ -210,7 +212,10 @@ def auto_edit(
     img = ImageEnhance.Sharpness(img).enhance(1.15)
 
     os.makedirs(os.path.dirname(dst_path), exist_ok=True)
-    img.save(dst_path, quality=95)
+    save_kwargs = {}
+    if source_format in {"JPEG", "JPG"}:
+        save_kwargs = {"quality": 100, "subsampling": 0}
+    img.save(dst_path, **save_kwargs)
 
 
 def _smart_crop(img: Image.Image, target_aspect: float) -> Image.Image:
@@ -295,7 +300,7 @@ def process_shoot(
         fname = os.path.basename(s.path)
         edited_path = os.path.join(all_dir, fname)
         if os.path.exists(edited_path):
-            Image.open(edited_path).save(os.path.join(best_dir, fname), quality=95)
+            shutil.copy2(edited_path, os.path.join(best_dir, fname))
 
     scores.sort(key=lambda s: s.total, reverse=True)
     return scores

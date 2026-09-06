@@ -1,0 +1,16 @@
+services:
+  photostudio:
+    build: .
+    container_name: photostudio
+    restart: unless-stopped
+    ports:
+      - "8001:8000"
+    env_file:
+      - .env
+    environment:
+      DB_PATH: /app/data/studio.db
+      GOOGLE_TOKEN_PATH: /app/data/token.json
+    volumes:
+      - ./data:/app/data
+      - ./data/uploads:/app/app/uploads
+      - ./data/processed:/app/app/processed

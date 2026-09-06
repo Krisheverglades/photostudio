@@ -25,7 +25,7 @@ from googleapiclient.discovery import build
 load_dotenv()
 
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
-TOKEN_PATH = os.path.join(os.path.dirname(__file__), "token.json")
+TOKEN_PATH = os.getenv("GOOGLE_TOKEN_PATH", os.path.join(os.path.dirname(__file__), "token.json"))
 CALENDAR_ID = os.getenv("GOOGLE_CALENDAR_ID", "primary")
 
 

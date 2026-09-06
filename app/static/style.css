@@ -112,6 +112,8 @@ a:hover { text-decoration: underline; }
   border-radius: 2px;
 }
 .btn:hover { background: #d9b876; text-decoration: none; }
+.btn-danger { background: #9d4b4b; color: var(--ivory); }
+.btn-danger:hover { background: #b85b5b; }
 
 .slots {
   display: grid;

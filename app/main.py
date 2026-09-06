@@ -1,6 +1,7 @@
 import os
+import random
 import shutil
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from dotenv import load_dotenv
 from fastapi import Cookie, FastAPI, Form, HTTPException, Request, UploadFile
@@ -51,7 +52,12 @@ def portfolio(request: Request):
         # `portfolio/` subfolder you curate manually — see README.
         portfolio_dir = os.path.join(PROCESSED_ROOT, "_portfolio")
         os.makedirs(portfolio_dir, exist_ok=True)
-        images = sorted(os.listdir(portfolio_dir))
+        images = [
+            name
+            for name in os.listdir(portfolio_dir)
+            if os.path.isfile(os.path.join(portfolio_dir, name))
+        ]
+        images = random.sample(images, min(10, len(images)))
     return templates.TemplateResponse(
         "portfolio.html",
         {
@@ -78,6 +84,7 @@ def book_appointment(
     email: str = Form(...),
     notes: str = Form(""),
     start_time: str = Form(...),  # ISO string from the calendar widget
+    duration_hours: float = Form(...),
 ):
     try:
         start = datetime.fromisoformat(start_time)
@@ -86,18 +93,28 @@ def book_appointment(
 
     if start.tzinfo is None:
         raise HTTPException(status_code=400, detail="Choose a valid appointment time.")
+    if not 0.5 <= duration_hours <= 9:
+        raise HTTPException(status_code=400, detail="Shoot duration must be between 0.5 and 9 hours.")
 
     now = datetime.now(start.tzinfo) if start.tzinfo else datetime.now()
     if not now < start <= now + timedelta(days=14):
         raise HTTPException(status_code=400, detail="Choose a time within the next 14 days.")
-    if start.minute or start.second or start.microsecond or start.hour not in {9, 11, 13, 15, 17}:
+    if start.minute or start.second or start.microsecond or start.hour not in set(range(9, 18)):
         raise HTTPException(status_code=400, detail="Choose one of the available appointment slots.")
 
-    end = start + timedelta(hours=1)
+    end = start + timedelta(hours=duration_hours)
+    if end.hour > 18 or (end.hour == 18 and (end.minute or end.second or end.microsecond)):
+        raise HTTPException(status_code=400, detail="This duration does not fit within the 09:00–18:00 studio hours.")
+    buffer_start = start - timedelta(hours=3)
+    buffer_end = end + timedelta(hours=3)
+    db_start = start.astimezone(timezone.utc).replace(tzinfo=None)
+    db_end = end.astimezone(timezone.utc).replace(tzinfo=None)
+    db_buffer_start = db_start - timedelta(hours=3)
+    db_buffer_end = db_end + timedelta(hours=3)
     busy = calendar_utils.get_busy_slots(days_ahead=14)
     if any(
-        start < datetime.fromisoformat(slot["end"].replace("Z", "+00:00"))
-        and end > datetime.fromisoformat(slot["start"].replace("Z", "+00:00"))
+        buffer_start < datetime.fromisoformat(slot["end"].replace("Z", "+00:00"))
+        and buffer_end > datetime.fromisoformat(slot["start"].replace("Z", "+00:00"))
         for slot in busy
     ):
         raise HTTPException(status_code=409, detail="That appointment slot is no longer available.")
@@ -105,8 +122,8 @@ def book_appointment(
     with get_session() as session:
         existing = session.exec(
             select(Appointment).where(
-                Appointment.start_time < end,
-                Appointment.end_time > start,
+                Appointment.start_time < db_buffer_end,
+                Appointment.end_time > db_buffer_start,
             )
         ).first()
     if existing:
@@ -124,8 +141,8 @@ def book_appointment(
             client_name=name,
             client_email=email,
             notes=notes,
-            start_time=start,
-            end_time=end,
+            start_time=db_start,
+            end_time=db_end,
             google_event_id=event_id,
         )
         session.add(appt)
@@ -190,6 +207,9 @@ async def create_shoot(
 ):
     if pw != ADMIN_PASSWORD:
         raise HTTPException(status_code=403, detail="Bad admin password")
+    if best_count < 1:
+        raise HTTPException(status_code=400, detail="Select at least one photo.")
+    best_count = min(best_count, 100)
 
     with get_session() as session:
         client = session.exec(select(Client).where(Client.email == client_email)).first()
@@ -278,4 +298,31 @@ def add_to_portfolio(pw: str = Form(...), shoot_id: int = Form(...), filenames: 
         src = os.path.join(best_dir, name)
         if os.path.exists(src):
             shutil.copy(src, os.path.join(portfolio_dir, f"{shoot_id}_{name}"))
+    return RedirectResponse(url=f"/admin?pw={pw}", status_code=303)
+
+
+@app.post("/admin/delete_shoot")
+def delete_shoot(pw: str = Form(...), shoot_id: int = Form(...)):
+    if pw != ADMIN_PASSWORD:
+        raise HTTPException(status_code=403, detail="Bad admin password")
+
+    with get_session() as session:
+        shoot = session.get(Shoot, shoot_id)
+        if not shoot:
+            raise HTTPException(status_code=404, detail="Shoot not found")
+
+        shoot_folder = os.path.abspath(shoot.folder_path)
+        processed_root = os.path.abspath(PROCESSED_ROOT)
+        if os.path.commonpath([shoot_folder, processed_root]) != processed_root:
+            raise HTTPException(status_code=400, detail="Invalid shoot storage path")
+
+        input_folder = os.path.join(UPLOAD_ROOT, os.path.basename(shoot_folder))
+        if os.path.isdir(input_folder):
+            shutil.rmtree(input_folder)
+        if os.path.isdir(shoot_folder):
+            shutil.rmtree(shoot_folder)
+
+        session.delete(shoot)
+        session.commit()
+
     return RedirectResponse(url=f"/admin?pw={pw}", status_code=303)

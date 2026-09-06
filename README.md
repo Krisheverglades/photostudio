@@ -4,11 +4,12 @@ An end-to-end system for a solo/small photography business:
 
 - **Upload** a shoot's raw photos through an admin page
 - **Auto-crop + auto-edit** every photo (exposure, color, sharpening; optional style preset)
-- **Auto-select the best N** (default 100) using sharpness/exposure/eyes-open scoring,
+- **Auto-select up to 100 best photos** (default 100) using sharpness/exposure/eyes-open scoring,
   deduplicated across burst sequences
 - **Email the client automatically** with a private gallery link + unique access key
 - **Client gallery** — client opens their link, sees only their best shots, can download
-- **Portfolio site** — pick any delivered photos into a public homepage grid
+- **Portfolio site** — pick any delivered photos into a public homepage grid; up to 10 are
+  shown randomly on each page load
 - **Booking page** — client picks an open slot; it's synced to your Google Calendar,
   and you get a confirmation email sent to the client automatically
 
@@ -129,6 +130,20 @@ Every `git push` to `main`:
    you can always confirm a deploy actually landed.
 
 No manual SSH needed after the one-time setup above.
+
+### Docker deployment
+
+For a server already running another application on port 8000, the included
+`docker-compose.yml` exposes Studio on port 8001 and persists the database,
+original uploads, processed galleries, portfolio files, and Google token under
+`data/`. Copy `.env.example` to `.env`, fill in the production values, then run:
+
+```bash
+docker compose up -d --build
+```
+
+The application is then available at `http://SERVER_IP:8001`. Configure your
+reverse proxy to forward your domain to port 8001 before using HTTPS.
 
 ## Scaling notes
 
