@@ -143,6 +143,7 @@
         <td>{{ "Yes" if s.email_sent else "No" }}</td>
         <td>
           <a href="/gallery/{{ s.access_key }}" target="_blank">Open gallery ↗</a>
+          <small class="gallery-key">Access key: {{ s.access_key }}</small>
           <form method="post" action="/admin/send_gallery_email" class="gallery-email-form">
             <input type="hidden" name="pw" value="{{ pw }}">
             <input type="hidden" name="shoot_id" value="{{ s.id }}">

@@ -140,6 +140,7 @@ h1, h2, h3, p { margin-top: 0; }
 .gallery-email-form { display: flex; gap: 6px; margin-top: 8px; }
 .gallery-email-form input { min-width: 160px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); padding: 7px; color: var(--ink); }
 .gallery-email-form .btn { padding: 8px 12px; font-size: .64rem; }
+.gallery-key { display: block; margin-top: 6px; color: var(--muted); font: .66rem 'DM Mono', monospace; word-break: break-all; }
 
 .panel {
   max-width: 680px;

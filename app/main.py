@@ -1,5 +1,6 @@
 import os
 import random
+import secrets
 import shutil
 import io
 import zipfile
@@ -48,6 +49,12 @@ def get_portfolio_images(limit: int = 10) -> list[str]:
         if os.path.isfile(os.path.join(portfolio_dir, name))
     ]
     return random.sample(images, min(limit, len(images)))
+
+
+def ensure_gallery_key(shoot: Shoot) -> str:
+    if not shoot.access_key:
+        shoot.access_key = secrets.token_urlsafe(16)
+    return shoot.access_key
 
 
 def admin_redirect(password: str) -> RedirectResponse:
@@ -381,10 +388,10 @@ async def create_shoot(
         shoot = session.get(Shoot, shoot.id)
         shoot.status = "ready"
         shoot.best_count = min(best_count, len(scores))
+        access_key = ensure_gallery_key(shoot)
         session.add(shoot)
         session.commit()
         session.refresh(shoot)
-        access_key = shoot.access_key
 
     sent = (
         email_utils.send_gallery_email(client_email, client_name, shoot_title, access_key)
@@ -498,10 +505,12 @@ def send_gallery_email(
         if not client:
             raise HTTPException(status_code=404, detail="Client not found")
         client.email = client_email
+        access_key = ensure_gallery_key(shoot)
         session.add(client)
+        session.add(shoot)
         session.commit()
         sent = email_utils.send_gallery_email(
-            client_email, client.name, shoot.title, shoot.access_key
+            client_email, client.name, shoot.title, access_key
         )
         shoot.email_sent = sent
         session.add(shoot)
