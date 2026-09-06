@@ -4,10 +4,11 @@ An end-to-end system for a solo/small photography business:
 
 - **Upload** a shoot's raw photos through an admin page
 - **Auto-crop + auto-edit** every photo (exposure, color, sharpening; optional style preset)
+- **Retouch integration point** for connecting an external AI retouch provider later
 - **Auto-select up to 100 best photos** (default 100) using sharpness/exposure/eyes-open scoring,
   deduplicated across burst sequences
 - **Email the client automatically** with a private gallery link + unique access key
-- **Client gallery** — client opens their link, sees only their best shots, can download
+- **Client gallery** — client opens their link, sees only their best shots, and can download
 - **Portfolio site** — pick any delivered photos into a public homepage grid; up to 10 are
   shown randomly on each page load
 - **Booking page** — client picks an open slot; it's synced to your Google Calendar,
@@ -51,6 +52,10 @@ under the hood), fully open for you to tune the weights in `score_image()`,
 or later replace with a model trained on photos you've personally picked
 in the past — that's the natural upgrade path once you have a library of
 "what I actually chose" data.
+
+The current retouch provider is intentionally set to `none`. The processing
+pipeline exposes `app/retouch.py` so an external AI provider can be added
+without changing upload, culling, editing, or delivery flow.
 
 ## Deploying to your VPS with auto-deploy on every push
 

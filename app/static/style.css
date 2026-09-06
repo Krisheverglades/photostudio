@@ -118,6 +118,7 @@ h1, h2, h3, p { margin-top: 0; }
 .proof-card > a { display: block; }
 .proof-card > a img { width: 100%; display: block; }
 .proof-card.is-favorite { outline: 3px solid var(--accent); outline-offset: -3px; }
+.download-label { padding: 10px 12px; background: var(--white); color: var(--muted); font: .68rem 'DM Mono', monospace; letter-spacing: .05em; text-transform: uppercase; }
 .proof-form { position: absolute; top: 12px; right: 12px; }
 .favorite-button { width: 38px; height: 38px; border: 0; border-radius: 50%; background: rgba(255,253,248,.9); color: var(--accent-dark); font-size: 1.3rem; cursor: pointer; box-shadow: 0 5px 18px rgba(0,0,0,.12); }
 .note-form { display: flex; padding: 9px; background: var(--white); }

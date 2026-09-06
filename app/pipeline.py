@@ -22,6 +22,8 @@ import cv2
 import numpy as np
 from PIL import Image, ImageEnhance, ImageOps
 
+from app.retouch import apply_retouch
+
 # Haar cascades ship with opencv-python-headless; used for a simple,
 # dependency-light face/eye check. Swap for a proper face-detection
 # model (e.g. MediaPipe or a YOLO face model) for better accuracy.
@@ -209,6 +211,7 @@ def auto_edit(
     if p["warmth"]:
         img = _adjust_warmth(img, p["warmth"])
 
+    img = apply_retouch(img, src_path)
     img = ImageEnhance.Sharpness(img).enhance(1.15)
 
     os.makedirs(os.path.dirname(dst_path), exist_ok=True)
