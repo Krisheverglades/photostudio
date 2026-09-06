@@ -50,6 +50,7 @@ h1, h2, h3, p { margin-top: 0; }
 .nav-links a:hover, .nav-links .active { color: var(--ink); }
 .nav-links .nav-cta { color: var(--white); background: var(--ink); padding: 11px 17px; border-radius: 999px; }
 .nav-links .nav-cta:hover { color: var(--white); background: var(--accent-dark); }
+.workspace-link { color: var(--accent-dark) !important; }
 
 .hero {
   max-width: 1440px;
@@ -471,6 +472,21 @@ td form { margin: 0; }
 .stack-card-3 { width: 170px; height: 215px; bottom: 7px; left: 4%; transform: rotate(5deg); z-index: 4; }
 .stack-card-4 { width: 190px; height: 240px; bottom: 30px; right: 7%; transform: rotate(-6deg); z-index: 1; }
 .stack-caption { position: absolute; right: 0; bottom: -30px; color: #777b80; font: .62rem 'DM Mono', monospace; letter-spacing: .2em; line-height: 1.5; text-align: right; }
+.workspace-section { max-width: 1240px; margin: 0 auto; padding: 55px 5vw 20px; }
+.workspace-heading { display: flex; align-items: end; justify-content: space-between; gap: 40px; }
+.workspace-heading h2 { max-width: 650px; color: #fff; font-size: clamp(2.7rem, 5vw, 5rem); line-height: .95; letter-spacing: -.06em; margin-bottom: 30px; }
+.workspace-heading h2 em { color: #75d9ff; }
+.workspace-heading p { max-width: 340px; color: #999da2; margin-bottom: 34px; }
+.workspace-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.workspace-card { min-height: 260px; padding: 26px; position: relative; overflow: hidden; border: 1px solid rgba(255,255,255,.2); transition: transform .25s ease, border-color .25s ease; }
+.workspace-card:hover { color: #fff; transform: translateY(-5px); border-color: rgba(255,255,255,.65); }
+.workspace-card-portfolio { background: linear-gradient(135deg, rgba(35,91,111,.8), rgba(14,24,31,.95)); }
+.workspace-card-dashboard { background: linear-gradient(135deg, rgba(80,63,116,.8), rgba(20,17,31,.95)); }
+.workspace-number { color: #b7e776; font: .68rem 'DM Mono', monospace; letter-spacing: .15em; }
+.workspace-label { position: absolute; top: 27px; right: 26px; color: #b8c4cc; font: .63rem 'DM Mono', monospace; letter-spacing: .12em; text-transform: uppercase; }
+.workspace-card h3 { color: #fff; font-size: 2.4rem; margin: 56px 0 10px; }
+.workspace-card p { max-width: 410px; color: #c2c8cd; font-size: .86rem; margin-bottom: 22px; }
+.workspace-action { color: #b7e776; font: .68rem 'DM Mono', monospace; letter-spacing: .1em; text-transform: uppercase; }
 .workflow-intro { max-width: 1240px; margin: 0 auto; padding: 95px 5vw 45px; }
 .workflow-intro h2 { max-width: 800px; color: #fff; font-size: clamp(2.7rem, 6vw, 5.8rem); line-height: .95; letter-spacing: -.06em; }
 .workflow-intro h2 em { color: #a9d871; }
@@ -496,6 +512,10 @@ td form { margin: 0; }
   .portfolio-page .hero.product-hero { min-height: auto; display: block; padding-top: 80px; padding-bottom: 30px; }
   .portfolio-page .hero-slideshow { inset: 0; opacity: .13; }
   .hero-stack { height: 330px; margin-top: 55px; transform: scale(.82); transform-origin: top left; width: 122%; }
+  .workspace-section { padding-top: 30px; }
+  .workspace-heading { display: block; }
+  .workspace-heading p { margin-bottom: 24px; }
+  .workspace-grid { grid-template-columns: 1fr; }
   .workflow-intro { padding-top: 50px; }
   .workflow-grid { grid-template-columns: 1fr; padding-bottom: 65px; }
   .workflow-card { min-height: 270px; }
