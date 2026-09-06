@@ -282,6 +282,7 @@ def admin_home(request: Request, pw: str = "", page: str = "dashboard"):
                 "request": request,
                 "error": "Incorrect admin password." if pw else "",
                 "background_images": get_portfolio_images(6),
+                "page": page,
             },
         )
     with get_session() as session:

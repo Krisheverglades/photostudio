@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Admin</title>
+  <title>{{ "Portfolio" if page == "portfolio" else "Dashboard" }} — Admin</title>
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body class="studio-page">
@@ -17,13 +17,16 @@
     <a class="brand" href="/"><span class="brand-mark">/</span>Studio</a>
   </div>
   <div class="panel">
-    <div class="eyebrow">Private workspace</div>
-    <h1>Welcome back</h1>
-    <p class="panel-intro">Sign in to manage shoots, galleries, and your public portfolio.</p>
+    <div class="eyebrow">{{ "Portfolio workspace" if page == "portfolio" else "Dashboard workspace" }}</div>
+    <h1>{{ "Manage your portfolio" if page == "portfolio" else "Welcome back" }}</h1>
+    <p class="panel-intro">
+      {{ "Process deliveries, upload portfolio work, and send private galleries." if page == "portfolio"
+         else "Review bookings and keep every session moving." }}
+    </p>
     {% if error %}
       <div class="notice">{{ error }}</div>
     {% endif %}
-    <form method="get" action="/dashboard">
+    <form method="get" action="{{ '/portfolio' if page == 'portfolio' else '/dashboard' }}">
       <div class="field">
         <label>Password</label>
         <input type="password" name="pw" autofocus>

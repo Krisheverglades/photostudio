@@ -41,6 +41,7 @@
   <div class="panel-wide notice notice-error">Email is not configured. Add SMTP_USERNAME and SMTP_PASSWORD to the server .env file before sending galleries.</div>
   {% endif %}
 
+  {% if page == "dashboard" %}
   <div class="dashboard-stats">
     <div class="stat-card stat-featured">
       <span class="stat-label">Next on the calendar</span>
@@ -76,6 +77,7 @@
     <p class="empty-state">Your next sessions will appear here after clients book.</p>
     {% endif %}
   </div>
+  {% endif %}
 
   {% if page == "portfolio" %}
   <div class="panel">
