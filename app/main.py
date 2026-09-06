@@ -57,9 +57,12 @@ def ensure_gallery_key(shoot: Shoot) -> str:
     return shoot.access_key
 
 
-def admin_redirect(password: str) -> RedirectResponse:
+def admin_redirect(password: str, email_status: str = "") -> RedirectResponse:
+    params = {"pw": password}
+    if email_status:
+        params["email"] = email_status
     return RedirectResponse(
-        url=f"/admin?{urlencode({'pw': password})}",
+        url=f"/admin?{urlencode(params)}",
         status_code=303,
     )
 
@@ -311,8 +314,14 @@ def admin_home(request: Request, pw: str = ""):
             "clients": clients,
             "version": get_version(),
             "background_images": get_portfolio_images(6),
+            "email_configured": email_utils.smtp_configured(),
         },
     )
+
+
+@app.get("/studio", response_class=HTMLResponse)
+def studio_home(request: Request, pw: str = ""):
+    return admin_home(request, pw)
 
 
 @app.post("/admin/create_shoot")
@@ -405,7 +414,7 @@ async def create_shoot(
         session.add(shoot)
         session.commit()
 
-    return admin_redirect(pw)
+    return admin_redirect(pw, "sent" if sent else "failed")
 
 
 @app.post("/admin/upload_portfolio")
@@ -433,7 +442,7 @@ async def upload_portfolio(
             shutil.copyfileobj(file.file, output)
         uploaded += 1
 
-    return admin_redirect(pw)
+    return admin_redirect(pw, "sent" if sent else "failed")
 
 
 @app.post("/admin/add_to_portfolio")

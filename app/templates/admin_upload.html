@@ -24,6 +24,13 @@
     <h1>Make room for<br><em>good light.</em></h1>
     <p>Upload a new shoot, shape the edit, and send a private gallery.</p>
   </div>
+  {% if request.query_params.get('email') == 'sent' %}
+  <div class="panel-wide notice">Gallery email sent successfully with the private link and access key.</div>
+  {% elif request.query_params.get('email') == 'failed' %}
+  <div class="panel-wide notice notice-error">Gallery email was not sent. Check SMTP_USERNAME and SMTP_PASSWORD in the server .env file.</div>
+  {% elif not email_configured %}
+  <div class="panel-wide notice notice-error">Email is not configured. Add SMTP_USERNAME and SMTP_PASSWORD to the server .env file before sending galleries.</div>
+  {% endif %}
 
   <div class="dashboard-stats">
     <div class="stat-card stat-featured">

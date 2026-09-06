@@ -19,6 +19,10 @@ STUDIO_NAME = os.getenv("STUDIO_NAME", "Your Studio")
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
 
 
+def smtp_configured() -> bool:
+    return bool(SMTP_HOST and SMTP_USERNAME and SMTP_PASSWORD)
+
+
 def send_gallery_email(to_email: str, client_name: str, shoot_title: str, access_key: str) -> bool:
     gallery_link = f"{BASE_URL}/gallery/{access_key}"
 
@@ -61,10 +65,11 @@ def send_gallery_email(to_email: str, client_name: str, shoot_title: str, access
     msg.attach(MIMEText(body_text, "plain"))
     msg.attach(MIMEText(body_html, "html"))
 
-    if not SMTP_USERNAME or not SMTP_PASSWORD:
-        # No credentials configured yet — log instead of sending, so the
-        # rest of the pipeline can still be tested end-to-end.
-        print(f"[email_utils] SMTP not configured. Would send to {to_email}:\n{gallery_link}")
+    if not smtp_configured():
+        print(
+            f"[email_utils] SMTP is not configured. "
+            f"Set SMTP_USERNAME and SMTP_PASSWORD before sending to {to_email}."
+        )
         return False
 
     try:

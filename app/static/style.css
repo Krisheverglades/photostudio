@@ -184,6 +184,8 @@ h1, h2, h3, p { margin-top: 0; }
 .slot.selected { border-color: var(--ink); background: var(--ink); color: var(--white); }
 .slot.busy { opacity: .32; cursor: not-allowed; text-decoration: line-through; }
 .notice { margin-bottom: 24px; border-left: 3px solid var(--accent); background: #f7eee3; padding: 15px 18px; color: var(--accent-dark); }
+.notice-error { border-left-color: #ff8e8e; background: rgba(132,34,47,.3); color: #ffe1e1; }
+.panel-wide.notice { max-width: 1440px; margin-top: 28px; margin-bottom: 0; }
 
 .tag { display: inline-block; border: 1px solid var(--line); border-radius: 99px; color: var(--muted); font: .68rem 'DM Mono', monospace; padding: 5px 9px; text-transform: uppercase; letter-spacing: .08em; }
 .tag.ready { border-color: var(--green); color: var(--green); }
