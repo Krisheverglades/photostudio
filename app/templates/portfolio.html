@@ -73,10 +73,6 @@
     </article>
   </section>
 
-  <div class="section-heading">
-    <h2>Selected portfolio</h2>
-    <span>{{ images|length }} photographs · click to expand</span>
-  </div>
   {% if images %}
   <script>
     const slides = Array.from(document.querySelectorAll('.hero-slide'));
@@ -90,18 +86,5 @@
     }
   </script>
   {% endif %}
-  <div class="grid">
-    {% if images %}
-      {% for img in images %}
-        <a href="/media/_portfolio/{{ img }}" target="_blank">
-          <img src="/media/_portfolio/{{ img }}" alt="Portfolio photo" loading="lazy">
-        </a>
-      {% endfor %}
-    {% else %}
-      <p class="empty-state">
-        No portfolio images yet — add some from the admin panel after your first shoot.
-      </p>
-    {% endif %}
-  </div>
 </body>
 </html>
