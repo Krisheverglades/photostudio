@@ -164,6 +164,18 @@ h1, h2, h3, p { margin-top: 0; }
   padding: 14px 15px;
 }
 .field textarea { min-height: 100px; resize: vertical; }
+.booking-choice { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.booking-choice input, .booking-choice select {
+  width: 100%;
+  min-height: 49px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--paper);
+  color: var(--ink);
+  font: 1rem 'DM Sans', sans-serif;
+  padding: 12px 14px;
+}
+.booking-choice input:focus, .booking-choice select:focus { outline: 2px solid rgba(194, 132, 73, .35); border-color: var(--accent); }
 .field input:focus, .field select:focus, .field textarea:focus { outline: 2px solid rgba(194, 132, 73, .35); border-color: var(--accent); }
 .slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 9px; margin: 14px 0 28px; }
 .slot { border: 1px solid var(--line); border-radius: 7px; padding: 13px 8px; text-align: center; color: var(--ink); font-size: .8rem; cursor: pointer; transition: all .2s ease; }
@@ -279,6 +291,10 @@ td form { margin: 0; }
 }
 .studio-page .slot:hover { border-color: #b7ee78; background: rgba(183,238,120,.18); }
 .studio-page .slot.selected { border-color: #b7ee78; background: #b7ee78; color: #07100b; }
+.studio-page .booking-choice input,
+.studio-page .booking-choice select { border-color: rgba(169,232,255,.48); background: rgba(255,255,255,.1); color: #fff; }
+.studio-page .booking-choice input:focus,
+.studio-page .booking-choice select:focus { outline-color: rgba(183,238,120,.7); border-color: #b7ee78; background: rgba(255,255,255,.16); }
 .studio-page .stat-card { background: rgba(8,14,22,.7); border-color: rgba(154,225,255,.38); backdrop-filter: blur(14px); }
 .studio-page .stat-card:not(.stat-featured) { color: #fff; }
 .studio-page .stat-card:not(.stat-featured) .stat-label,
@@ -425,4 +441,5 @@ td form { margin: 0; }
   .workflow-intro { padding-top: 50px; }
   .workflow-grid { grid-template-columns: 1fr; padding-bottom: 65px; }
   .workflow-card { min-height: 270px; }
+  .booking-choice { grid-template-columns: 1fr; }
 }
