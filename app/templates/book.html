@@ -8,13 +8,14 @@
 </head>
 <body>
   <div class="nav">
-    <div class="brand"><a href="/" style="color:inherit;">{{ studio_name }}</a></div>
-    <div><a href="/">Work</a></div>
+    <a class="brand" href="/"><span class="brand-mark">/</span>{{ studio_name }}</a>
+    <div class="nav-links"><a href="/">Back to work</a></div>
   </div>
 
   <div class="panel">
-    <h2>Book a session</h2>
-    <p style="color: var(--smoke); margin: 10px 0 30px;">
+    <div class="eyebrow">Let’s make something meaningful</div>
+    <h1>Book a session</h1>
+    <p class="panel-intro">
       Pick a date, start time, and shoot duration. A three-hour travel and preparation
       buffer is kept after every shoot.
     </p>
@@ -33,7 +34,7 @@
         <input type="email" name="email" required>
       </div>
       <div class="field">
-        <label>Anything I should know? (location, occasion, headcount...)</label>
+        <label>Tell me about the session</label>
         <textarea name="notes" rows="3"></textarea>
       </div>
       <div class="field">
@@ -91,32 +92,32 @@
       container.replaceChildren();
       const duration = Number(durationInput.value) || 1;
       for (let d = 1; d <= 14; d++) {
-      const day = new Date(now);
-      day.setDate(day.getDate() + d);
-      hours.forEach(h => {
-        const slotStart = new Date(day);
-        slotStart.setHours(h, 0, 0, 0);
-        const slotEnd = new Date(slotStart);
-        slotEnd.setTime(slotStart.getTime() + duration * 60 * 60 * 1000);
+        const day = new Date(now);
+        day.setDate(day.getDate() + d);
+        hours.forEach(h => {
+          const slotStart = new Date(day);
+          slotStart.setHours(h, 0, 0, 0);
+          const slotEnd = new Date(slotStart);
+          slotEnd.setTime(slotStart.getTime() + duration * 60 * 60 * 1000);
 
-        const btn = document.createElement('div');
-        btn.className = 'slot';
-        const label = slotStart.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })
-          + ' ' + slotStart.toLocaleTimeString(undefined, { hour: 'numeric' });
-        btn.textContent = label;
+          const btn = document.createElement('div');
+          btn.className = 'slot';
+          const label = slotStart.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })
+            + ' ' + slotStart.toLocaleTimeString(undefined, { hour: 'numeric' });
+          btn.textContent = label;
 
-        if (slotEnd.getHours() > 18 || slotOverlapsBusy(slotStart, slotEnd)) {
-          btn.classList.add('busy');
-        } else {
-          btn.addEventListener('click', () => {
-            document.querySelectorAll('.slot.selected').forEach(el => el.classList.remove('selected'));
-            btn.classList.add('selected');
-            hiddenInput.value = toLocalIsoString(slotStart);
-          });
-        }
-        container.appendChild(btn);
-      });
-    }
+          if (slotEnd.getHours() > 18 || slotOverlapsBusy(slotStart, slotEnd)) {
+            btn.classList.add('busy');
+          } else {
+            btn.addEventListener('click', () => {
+              document.querySelectorAll('.slot.selected').forEach(el => el.classList.remove('selected'));
+              btn.classList.add('selected');
+              hiddenInput.value = toLocalIsoString(slotStart);
+            });
+          }
+          container.appendChild(btn);
+        });
+      }
     }
 
     durationInput.addEventListener('input', renderSlots);

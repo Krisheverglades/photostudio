@@ -6,21 +6,53 @@
   <title>{{ studio_name }}</title>
   <link rel="stylesheet" href="/static/style.css">
 </head>
-<body>
+<body class="portfolio-page">
   <div class="nav">
-    <div class="brand">{{ studio_name }}</div>
-    <div>
-      <a href="/">Work</a>
-      <a href="/book" class="cta">Book a session</a>
+    <a class="brand" href="/"><span class="brand-mark">/</span>{{ studio_name }}</a>
+    <div class="nav-links">
+      <a class="active optional" href="/">Work</a>
+      <a class="optional" href="/admin">Studio</a>
+      <a class="nav-cta" href="/book">Book a session <span aria-hidden="true">↗</span></a>
     </div>
   </div>
 
   <div class="hero">
+    {% if images %}
+    <div class="hero-slideshow" aria-hidden="true">
+      {% for img in images %}
+      <a class="hero-slide{{ ' active' if loop.first else '' }}" href="/media/_portfolio/{{ img }}" target="_blank" rel="noopener">
+        <img src="/media/_portfolio/{{ img }}" alt="Open portfolio photograph">
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+    <div class="hero-content">
+    <div class="eyebrow">Portraits · Stories · Light</div>
     <h1>{{ tagline or "Photographs that hold onto a moment." }}</h1>
-    <p>A selected collection of recent work. Every session is culled, edited,
-       and delivered to a private gallery — book a date below to start yours.</p>
+    <p>A quiet, considered record of the people and places that matter. Every session is carefully edited and delivered to a private gallery.</p>
+    <div class="hero-actions">
+      <a href="/book" class="btn">Start a story <span aria-hidden="true">&nbsp;↗</span></a>
+    </div>
+    </div>
   </div>
 
+  <div class="section-heading">
+    <h2>Selected work</h2>
+    <span>{{ images|length }} photographs · click to expand</span>
+  </div>
+  {% if images %}
+  <script>
+    const slides = Array.from(document.querySelectorAll('.hero-slide'));
+    let currentSlide = 0;
+    if (slides.length > 1) {
+      setInterval(() => {
+        slides[currentSlide].classList.remove('active');
+        currentSlide = (currentSlide + 1) % slides.length;
+        slides[currentSlide].classList.add('active');
+      }, 5000);
+    }
+  </script>
+  {% endif %}
   <div class="grid">
     {% if images %}
       {% for img in images %}
@@ -29,7 +61,7 @@
         </a>
       {% endfor %}
     {% else %}
-      <p style="grid-column: 1/-1; color: var(--smoke); padding: 2vw 0;">
+      <p class="empty-state">
         No portfolio images yet — add some from the admin panel after your first shoot.
       </p>
     {% endif %}

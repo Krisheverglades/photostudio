@@ -8,25 +8,46 @@
 </head>
 <body>
   <div class="nav">
-    <div class="brand">{{ studio_name }}</div>
+    <a class="brand" href="/"><span class="brand-mark">/</span>{{ studio_name }}</a>
     <div><span class="tag ready">Private gallery</span></div>
   </div>
 
   <div class="hero">
+    <div class="eyebrow">A private collection for {{ client_name }}</div>
     <h1>{{ shoot_title }}</h1>
-    <p>Hi {{ client_name }} — here are your favorites, selected and edited from the full shoot.
-       Click any photo to view full size and save it.</p>
+    <p>Hi {{ client_name }} — your photographs are ready. Click any image to view it full size or download a copy.</p>
   </div>
 
+  <div class="section-heading">
+    <h2>Your photographs</h2>
+    <span>{{ favorite_count }} favorites · {{ images|length }} selected</span>
+    <a class="btn btn-outline" href="/gallery/{{ access_key }}/download-all">Download all</a>
+  </div>
   <div class="grid">
     {% if images %}
       {% for img in images %}
-        <a href="/media/{{ media_dir }}/{{ img }}" download>
+        {% set item = feedback.get(img) %}
+        <div class="proof-card {{ 'is-favorite' if item and item.is_favorite else '' }}">
+          <a href="/media/{{ media_dir }}/{{ img }}" target="_blank">
           <img src="/media/{{ media_dir }}/{{ img }}" alt="{{ shoot_title }} photo" loading="lazy">
-        </a>
+          </a>
+          <form method="post" action="/gallery/{{ access_key }}/feedback" class="proof-form">
+            <input type="hidden" name="filename" value="{{ img }}">
+            <input type="hidden" name="is_favorite" value="{{ 'false' if item and item.is_favorite else 'true' }}">
+            <input type="hidden" name="note" value="{{ item.note if item and item.note else '' }}">
+            <button class="favorite-button" type="submit" aria-label="Toggle favorite">
+              {{ '♥' if item and item.is_favorite else '♡' }}
+            </button>
+          </form>
+          <form method="post" action="/gallery/{{ access_key }}/feedback" class="note-form">
+            <input type="hidden" name="filename" value="{{ img }}">
+            <input type="hidden" name="is_favorite" value="{{ 'true' if item and item.is_favorite else 'false' }}">
+            <input type="text" name="note" value="{{ item.note if item and item.note else '' }}" placeholder="Add a note for the studio">
+          </form>
+        </div>
       {% endfor %}
     {% else %}
-      <p style="grid-column: 1/-1; color: var(--smoke); padding: 2vw 0;">
+      <p class="empty-state">
         Your gallery is still being prepared — check back shortly.
       </p>
     {% endif %}

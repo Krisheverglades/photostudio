@@ -3,6 +3,7 @@ import secrets
 from datetime import datetime
 from typing import Optional
 
+from sqlalchemy import text
 from sqlmodel import Field, Session, SQLModel, create_engine
 
 DB_PATH = os.getenv("DB_PATH", "./app/studio.db")
@@ -29,6 +30,16 @@ class Shoot(SQLModel, table=True):
     email_sent: bool = False
 
 
+class GalleryFeedback(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    shoot_id: int = Field(foreign_key="shoot.id", index=True)
+    filename: str
+    is_favorite: bool = False
+    note: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 class Appointment(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     client_name: str
@@ -37,11 +48,22 @@ class Appointment(SQLModel, table=True):
     start_time: datetime
     end_time: datetime
     google_event_id: Optional[str] = None
+    status: str = "requested"  # requested -> confirmed -> completed/cancelled
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 def init_db() -> None:
     SQLModel.metadata.create_all(engine)
+    with engine.connect() as connection:
+        columns = {
+            row[1]
+            for row in connection.execute(text("PRAGMA table_info(appointment)"))
+        }
+        if "status" not in columns:
+            connection.execute(
+                text("ALTER TABLE appointment ADD COLUMN status VARCHAR DEFAULT 'requested'")
+            )
+            connection.commit()
 
 
 def get_session() -> Session:

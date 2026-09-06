@@ -8,15 +8,58 @@
 </head>
 <body>
   <div class="nav">
-    <div class="brand">Studio Admin</div>
-    <div><a href="/">View site</a></div>
+    <a class="brand" href="/"><span class="brand-mark">/</span>Studio Admin</a>
+    <div class="nav-links"><a href="/">View site ↗</a></div>
   </div>
 
-  <div class="panel" style="max-width: 640px;">
-    <h2>New shoot</h2>
-    <p style="color: var(--smoke); margin: 10px 0 26px;">
+  <div class="admin-header">
+    <div class="eyebrow">Studio workspace</div>
+    <h1>Make room for<br><em>good light.</em></h1>
+    <p>Upload a new shoot, shape the edit, and send a private gallery.</p>
+  </div>
+
+  <div class="dashboard-stats">
+    <div class="stat-card stat-featured">
+      <span class="stat-label">Next on the calendar</span>
+      {% if upcoming_appointments %}
+      <strong>{{ upcoming_appointments[0].start_time.strftime("%b %d") }}</strong>
+      <small>{{ upcoming_appointments[0].client_name }} · {{ upcoming_appointments[0].start_time.strftime("%I:%M %p") }}</small>
+      {% else %}
+      <strong>—</strong>
+      <small>No upcoming sessions</small>
+      {% endif %}
+    </div>
+    <div class="stat-card"><span class="stat-label">Upcoming</span><strong>{{ appointment_stats.upcoming }}</strong><small>sessions</small></div>
+    <div class="stat-card"><span class="stat-label">Needs action</span><strong>{{ appointment_stats.requested }}</strong><small>booking requests</small></div>
+    <div class="stat-card"><span class="stat-label">Delivered</span><strong>{{ shoots|length }}</strong><small>shoot galleries</small></div>
+  </div>
+
+  <div class="panel panel-wide dashboard-upcoming">
+    <div class="section-heading" style="padding: 0 0 24px;">
+      <h2>Upcoming sessions</h2>
+      <span>{{ appointment_stats.confirmed }} confirmed</span>
+    </div>
+    {% if upcoming_appointments %}
+    <div class="upcoming-list">
+      {% for appointment in upcoming_appointments %}
+      <div class="upcoming-row">
+        <div class="upcoming-date"><strong>{{ appointment.start_time.strftime("%d") }}</strong><span>{{ appointment.start_time.strftime("%b") }}</span></div>
+        <div class="upcoming-info"><strong>{{ appointment.client_name }}</strong><span>{{ appointment.start_time.strftime("%A, %B %d · %I:%M %p") }}</span></div>
+        <span class="tag {{ 'ready' if appointment.status == 'confirmed' else '' }}">{{ appointment.status }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="empty-state">Your next sessions will appear here after clients book.</p>
+    {% endif %}
+  </div>
+
+  <div class="panel">
+    <div class="eyebrow">New delivery</div>
+    <h2>Process a shoot</h2>
+    <p class="panel-intro">
       Upload the raw photos from a shoot. They'll be auto-cropped, auto-edited,
-      the best {{ "N" }} selected, and a private gallery link emailed to the client automatically.
+      the best {{ "N" }} selected. Add an email if you want the private gallery link sent automatically.
     </p>
 
     <form method="post" action="/admin/create_shoot" enctype="multipart/form-data">
@@ -26,8 +69,8 @@
         <input type="text" name="client_name" required>
       </div>
       <div class="field">
-        <label>Client email</label>
-        <input type="email" name="client_email" required>
+        <label>Client email <span style="text-transform: none; letter-spacing: 0;">(optional)</span></label>
+        <input type="email" name="client_email" placeholder="Add later if you want to email the gallery">
       </div>
       <div class="field">
         <label>Shoot title</label>
@@ -64,9 +107,26 @@
     </form>
   </div>
 
-  <div class="panel" style="max-width: 900px;">
+  <div class="panel">
+    <div class="eyebrow">Homepage slideshow</div>
+    <h2>Upload portfolio work</h2>
+    <p class="panel-intro">Add a few finished images to the homepage. They will rotate gently behind the introduction.</p>
+    <form method="post" action="/admin/upload_portfolio" enctype="multipart/form-data">
+      <input type="hidden" name="pw" value="{{ pw }}">
+      <div class="field">
+        <label>Portfolio images</label>
+        <input type="file" name="files" multiple accept="image/jpeg,image/png,image/webp,image/tiff" required>
+      </div>
+      <button type="submit" class="btn">Add to slideshow <span aria-hidden="true">&nbsp;↗</span></button>
+    </form>
+  </div>
+
+  <div class="panel panel-wide">
+    <div class="section-heading" style="padding: 0 0 24px;">
     <h2>Past shoots</h2>
-    <table style="margin-top: 20px;">
+    <span>{{ shoots|length }} deliveries</span>
+    </div>
+    <table>
       <tr><th>Title</th><th>Status</th><th>Best/Total</th><th>Email sent</th><th>Gallery link</th><th>Actions</th></tr>
       {% for s in shoots %}
       <tr>
@@ -74,7 +134,15 @@
         <td><span class="tag {{ 'ready' if s.status == 'ready' else '' }}">{{ s.status }}</span></td>
         <td>{{ s.best_count }} / {{ s.total_photos }}</td>
         <td>{{ "Yes" if s.email_sent else "No" }}</td>
-        <td><a href="/gallery/{{ s.access_key }}" target="_blank">/gallery/{{ s.access_key }}</a></td>
+        <td>
+          <a href="/gallery/{{ s.access_key }}" target="_blank">Open gallery ↗</a>
+          <form method="post" action="/admin/send_gallery_email" class="gallery-email-form">
+            <input type="hidden" name="pw" value="{{ pw }}">
+            <input type="hidden" name="shoot_id" value="{{ s.id }}">
+            <input type="email" name="client_email" value="{{ clients[s.client_id].email if clients[s.client_id].email else '' }}" placeholder="Client email">
+            <button type="submit" class="btn btn-outline">Send link</button>
+          </form>
+        </td>
         <td>
           <form method="post" action="/admin/delete_shoot"
                 onsubmit="return confirm('Delete this shoot, its originals, and its gallery?');">
@@ -88,8 +156,39 @@
     </table>
   </div>
 
-  <div class="panel" style="max-width: 900px; padding-top: 0;">
-    <p style="color: var(--smoke); font-size: 0.8rem;">Running version: {{ version }}</p>
+  <div class="panel panel-wide">
+    <div class="section-heading" style="padding: 0 0 24px;">
+      <h2>Booking workflow</h2>
+      <span>{{ appointments|length }} appointments</span>
+    </div>
+    <table>
+      <tr><th>Client</th><th>When</th><th>Contact</th><th>Status</th><th>Update</th></tr>
+      {% for appointment in appointments %}
+      <tr>
+        <td>{{ appointment.client_name }}</td>
+        <td>{{ appointment.start_time.strftime("%b %d, %Y · %I:%M %p") }}</td>
+        <td><a href="mailto:{{ appointment.client_email }}">{{ appointment.client_email }}</a></td>
+        <td><span class="tag {{ 'ready' if appointment.status == 'confirmed' else '' }}">{{ appointment.status }}</span></td>
+        <td>
+          <form method="post" action="/admin/update_appointment" class="inline-form">
+            <input type="hidden" name="pw" value="{{ pw }}">
+            <input type="hidden" name="appointment_id" value="{{ appointment.id }}">
+            <select name="status" onchange="this.form.submit()">
+              {% for option in ["requested", "confirmed", "completed", "cancelled"] %}
+              <option value="{{ option }}" {{ "selected" if option == appointment.status else "" }}>{{ option|title }}</option>
+              {% endfor %}
+            </select>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="empty-state">No appointments yet.</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  <div class="panel panel-wide" style="padding-top: 0; margin-top: -75px; box-shadow: none; border: 0; background: transparent;">
+    <p style="color: var(--muted); font: .7rem 'DM Mono', monospace;">RUNNING VERSION · {{ version }}</p>
   </div>
 </body>
 </html>

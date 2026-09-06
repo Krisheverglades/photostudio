@@ -1,11 +1,14 @@
 import os
 import random
 import shutil
+import io
+import zipfile
 from datetime import datetime, timedelta, timezone
+from urllib.parse import urlencode
 
 from dotenv import load_dotenv
 from fastapi import Cookie, FastAPI, Form, HTTPException, Request, UploadFile
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlmodel import select
@@ -15,7 +18,7 @@ from sqlmodel import select
 load_dotenv()
 
 from app import calendar_utils, email_utils
-from app.database import Appointment, Client, Shoot, get_session, init_db
+from app.database import Appointment, Client, GalleryFeedback, Shoot, get_session, init_db
 from app.pipeline import process_shoot
 from app.version import get_version
 
@@ -34,6 +37,13 @@ app.mount("/media", StaticFiles(directory=PROCESSED_ROOT), name="media")
 STUDIO_NAME = os.getenv("STUDIO_NAME", "Your Studio Name")
 STUDIO_TAGLINE = os.getenv("STUDIO_TAGLINE", "")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "change-me")
+
+
+def admin_redirect(password: str) -> RedirectResponse:
+    return RedirectResponse(
+        url=f"/admin?{urlencode({'pw': password})}",
+        status_code=303,
+    )
 
 
 @app.on_event("startup")
@@ -161,10 +171,14 @@ def client_gallery(request: Request, access_key: str):
         if not shoot:
             raise HTTPException(status_code=404, detail="Gallery not found. Check your link or access key.")
         client = session.get(Client, shoot.client_id)
+        feedback = session.exec(
+            select(GalleryFeedback).where(GalleryFeedback.shoot_id == shoot.id)
+        ).all()
 
     best_dir = os.path.join(shoot.folder_path, "best")
     images = sorted(os.listdir(best_dir)) if os.path.isdir(best_dir) else []
     rel_dir = os.path.relpath(best_dir, PROCESSED_ROOT).replace(os.sep, "/")
+    feedback_by_file = {item.filename: item for item in feedback}
 
     return templates.TemplateResponse(
         "client_gallery.html",
@@ -176,7 +190,65 @@ def client_gallery(request: Request, access_key: str):
             "images": images,
             "media_dir": rel_dir,
             "status": shoot.status,
+            "access_key": access_key,
+            "feedback": feedback_by_file,
+            "favorite_count": sum(item.is_favorite for item in feedback),
         },
+    )
+
+
+@app.post("/gallery/{access_key}/feedback")
+def save_gallery_feedback(
+    access_key: str,
+    filename: str = Form(...),
+    is_favorite: str = Form(""),
+    note: str = Form(""),
+):
+    with get_session() as session:
+        shoot = session.exec(select(Shoot).where(Shoot.access_key == access_key)).first()
+        if not shoot:
+            raise HTTPException(status_code=404, detail="Gallery not found")
+        safe_filename = os.path.basename(filename.replace("\\", "/"))
+        best_dir = os.path.abspath(os.path.join(shoot.folder_path, "best"))
+        image_path = os.path.abspath(os.path.join(best_dir, safe_filename))
+        if os.path.commonpath([image_path, best_dir]) != best_dir or not os.path.isfile(image_path):
+            raise HTTPException(status_code=400, detail="Photo not found in this gallery")
+        item = session.exec(
+            select(GalleryFeedback).where(
+                GalleryFeedback.shoot_id == shoot.id,
+                GalleryFeedback.filename == safe_filename,
+            )
+        ).first()
+        if not item:
+            item = GalleryFeedback(shoot_id=shoot.id, filename=safe_filename)
+        item.is_favorite = is_favorite == "true"
+        item.note = note.strip() or None
+        item.updated_at = datetime.utcnow()
+        session.add(item)
+        session.commit()
+    return RedirectResponse(url=f"/gallery/{access_key}", status_code=303)
+
+
+@app.get("/gallery/{access_key}/download-all")
+def download_gallery(access_key: str):
+    with get_session() as session:
+        shoot = session.exec(select(Shoot).where(Shoot.access_key == access_key)).first()
+        if not shoot:
+            raise HTTPException(status_code=404, detail="Gallery not found")
+        best_dir = os.path.abspath(os.path.join(shoot.folder_path, "best"))
+        if not os.path.isdir(best_dir):
+            raise HTTPException(status_code=404, detail="Gallery is not ready")
+        archive = io.BytesIO()
+        with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as zip_file:
+            for filename in sorted(os.listdir(best_dir)):
+                path = os.path.abspath(os.path.join(best_dir, filename))
+                if os.path.isfile(path) and os.path.commonpath([path, best_dir]) == best_dir:
+                    zip_file.write(path, arcname=filename)
+        archive.seek(0)
+    return StreamingResponse(
+        archive,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{shoot.access_key}-gallery.zip"'},
     )
 
 
@@ -185,12 +257,43 @@ def client_gallery(request: Request, access_key: str):
 @app.get("/admin", response_class=HTMLResponse)
 def admin_home(request: Request, pw: str = ""):
     if pw != ADMIN_PASSWORD:
-        return templates.TemplateResponse("admin_login.html", {"request": request})
+        return templates.TemplateResponse(
+            "admin_login.html",
+            {
+                "request": request,
+                "error": "Incorrect admin password." if pw else "",
+            },
+        )
     with get_session() as session:
         shoots = session.exec(select(Shoot)).all()
+        appointments = session.exec(
+            select(Appointment).order_by(Appointment.start_time)
+        ).all()
+        clients = {client.id: client for client in session.exec(select(Client)).all()}
+        upcoming_appointments = [
+            appointment
+            for appointment in appointments
+            if appointment.start_time >= datetime.utcnow()
+            and appointment.status != "cancelled"
+        ][:5]
+        appointment_stats = {
+            "total": len(appointments),
+            "upcoming": len(upcoming_appointments),
+            "requested": sum(item.status == "requested" for item in appointments),
+            "confirmed": sum(item.status == "confirmed" for item in appointments),
+        }
     return templates.TemplateResponse(
         "admin_upload.html",
-        {"request": request, "pw": pw, "shoots": shoots, "version": get_version()},
+        {
+            "request": request,
+            "pw": pw,
+            "shoots": shoots,
+            "appointments": appointments,
+            "upcoming_appointments": upcoming_appointments,
+            "appointment_stats": appointment_stats,
+            "clients": clients,
+            "version": get_version(),
+        },
     )
 
 
@@ -198,7 +301,7 @@ def admin_home(request: Request, pw: str = ""):
 async def create_shoot(
     pw: str = Form(...),
     client_name: str = Form(...),
-    client_email: str = Form(...),
+    client_email: str = Form(""),
     shoot_title: str = Form(...),
     best_count: int = Form(100),
     style: str = Form("natural"),
@@ -210,9 +313,12 @@ async def create_shoot(
     if best_count < 1:
         raise HTTPException(status_code=400, detail="Select at least one photo.")
     best_count = min(best_count, 100)
+    client_email = client_email.strip()
 
     with get_session() as session:
-        client = session.exec(select(Client).where(Client.email == client_email)).first()
+        client = None
+        if client_email:
+            client = session.exec(select(Client).where(Client.email == client_email)).first()
         if not client:
             client = Client(name=client_name, email=client_email)
             session.add(client)
@@ -269,7 +375,11 @@ async def create_shoot(
         session.refresh(shoot)
         access_key = shoot.access_key
 
-    sent = email_utils.send_gallery_email(client_email, client_name, shoot_title, access_key)
+    sent = (
+        email_utils.send_gallery_email(client_email, client_name, shoot_title, access_key)
+        if client_email
+        else False
+    )
 
     with get_session() as session:
         shoot = session.get(Shoot, shoot.id)
@@ -277,7 +387,35 @@ async def create_shoot(
         session.add(shoot)
         session.commit()
 
-    return RedirectResponse(url=f"/admin?pw={pw}", status_code=303)
+    return admin_redirect(pw)
+
+
+@app.post("/admin/upload_portfolio")
+async def upload_portfolio(
+    pw: str = Form(...),
+    files: list[UploadFile] = None,
+):
+    if pw != ADMIN_PASSWORD:
+        raise HTTPException(status_code=403, detail="Bad admin password")
+
+    portfolio_dir = os.path.join(PROCESSED_ROOT, "_portfolio")
+    os.makedirs(portfolio_dir, exist_ok=True)
+    allowed_extensions = {".jpg", ".jpeg", ".png", ".webp", ".tif", ".tiff"}
+    uploaded = 0
+    for file in files or []:
+        filename = os.path.basename((file.filename or "").replace("\\", "/"))
+        extension = os.path.splitext(filename)[1].lower()
+        if not filename or extension not in allowed_extensions:
+            continue
+        destination = os.path.join(portfolio_dir, filename)
+        if os.path.exists(destination):
+            stem, suffix = os.path.splitext(filename)
+            destination = os.path.join(portfolio_dir, f"{stem}_{uploaded + 1}{suffix}")
+        with open(destination, "wb") as output:
+            shutil.copyfileobj(file.file, output)
+        uploaded += 1
+
+    return admin_redirect(pw)
 
 
 @app.post("/admin/add_to_portfolio")
@@ -298,7 +436,7 @@ def add_to_portfolio(pw: str = Form(...), shoot_id: int = Form(...), filenames: 
         src = os.path.join(best_dir, name)
         if os.path.exists(src):
             shutil.copy(src, os.path.join(portfolio_dir, f"{shoot_id}_{name}"))
-    return RedirectResponse(url=f"/admin?pw={pw}", status_code=303)
+    return admin_redirect(pw)
 
 
 @app.post("/admin/delete_shoot")
@@ -325,4 +463,57 @@ def delete_shoot(pw: str = Form(...), shoot_id: int = Form(...)):
         session.delete(shoot)
         session.commit()
 
-    return RedirectResponse(url=f"/admin?pw={pw}", status_code=303)
+    return admin_redirect(pw)
+
+
+@app.post("/admin/send_gallery_email")
+def send_gallery_email(
+    pw: str = Form(...),
+    shoot_id: int = Form(...),
+    client_email: str = Form(""),
+):
+    if pw != ADMIN_PASSWORD:
+        raise HTTPException(status_code=403, detail="Bad admin password")
+
+    client_email = client_email.strip()
+    if not client_email:
+        raise HTTPException(status_code=400, detail="Enter a client email address")
+
+    with get_session() as session:
+        shoot = session.get(Shoot, shoot_id)
+        if not shoot:
+            raise HTTPException(status_code=404, detail="Shoot not found")
+        client = session.get(Client, shoot.client_id)
+        if not client:
+            raise HTTPException(status_code=404, detail="Client not found")
+        client.email = client_email
+        session.add(client)
+        session.commit()
+        sent = email_utils.send_gallery_email(
+            client_email, client.name, shoot.title, shoot.access_key
+        )
+        shoot.email_sent = sent
+        session.add(shoot)
+        session.commit()
+
+    return admin_redirect(pw)
+
+
+@app.post("/admin/update_appointment")
+def update_appointment(
+    pw: str = Form(...),
+    appointment_id: int = Form(...),
+    status: str = Form(...),
+):
+    if pw != ADMIN_PASSWORD:
+        raise HTTPException(status_code=403, detail="Bad admin password")
+    if status not in {"requested", "confirmed", "completed", "cancelled"}:
+        raise HTTPException(status_code=400, detail="Invalid appointment status")
+    with get_session() as session:
+        appointment = session.get(Appointment, appointment_id)
+        if not appointment:
+            raise HTTPException(status_code=404, detail="Appointment not found")
+        appointment.status = status
+        session.add(appointment)
+        session.commit()
+    return admin_redirect(pw)
