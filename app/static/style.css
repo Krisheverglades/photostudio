@@ -292,7 +292,28 @@ td form { margin: 0; }
 .studio-page .slot:hover { border-color: #b7ee78; background: rgba(183,238,120,.18); }
 .studio-page .slot.selected { border-color: #b7ee78; background: #b7ee78; color: #07100b; }
 .studio-page .booking-choice input,
-.studio-page .booking-choice select { border-color: rgba(169,232,255,.48); background: rgba(255,255,255,.1); color: #fff; }
+.studio-page .booking-choice select {
+  border-color: rgba(169,232,255,.65);
+  background: rgba(13, 30, 43, .78);
+  color: #fff;
+  color-scheme: dark;
+}
+.studio-page .booking-choice input {
+  border-color: rgba(169,232,255,.65);
+  background: rgba(13, 30, 43, .78);
+  color: #fff;
+  color-scheme: dark;
+  accent-color: #b7ee78;
+}
+.studio-page .booking-choice input::-webkit-calendar-picker-indicator {
+  filter: invert(1) sepia(1) saturate(2) hue-rotate(65deg);
+  cursor: pointer;
+}
+.studio-page .booking-choice input:hover,
+.studio-page .booking-choice select:hover {
+  border-color: #b7ee78;
+  background: rgba(25, 55, 68, .9);
+}
 .studio-page .booking-choice input:focus,
 .studio-page .booking-choice select:focus { outline-color: rgba(183,238,120,.7); border-color: #b7ee78; background: rgba(255,255,255,.16); }
 .studio-page .stat-card { background: rgba(8,14,22,.7); border-color: rgba(154,225,255,.38); backdrop-filter: blur(14px); }
@@ -303,6 +324,33 @@ td form { margin: 0; }
 .studio-page table td { color: #f0f6fb; border-bottom-color: rgba(169,232,255,.2); }
 .studio-page .inline-form select,
 .studio-page .gallery-email-form input { background: rgba(255,255,255,.1); color: #fff; border-color: rgba(169,232,255,.45); }
+.studio-page .btn,
+.studio-page button,
+.studio-page .nav-cta {
+  border: 1px solid rgba(183, 238, 120, .72);
+  background: rgba(183, 238, 120, .16);
+  color: #f7fff0;
+  box-shadow: 0 8px 24px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.18);
+  backdrop-filter: blur(10px);
+}
+.studio-page .btn:hover,
+.studio-page button:hover,
+.studio-page .nav-cta:hover {
+  background: rgba(183, 238, 120, .34);
+  border-color: #d6ffad;
+  color: #fff;
+  transform: translateY(-2px);
+}
+.studio-page .btn-outline {
+  border-color: rgba(169,232,255,.7);
+  background: rgba(169,232,255,.1);
+  color: #dff7ff;
+}
+.studio-page .btn-danger {
+  border-color: rgba(255,150,150,.7);
+  background: rgba(190,70,85,.22);
+  color: #ffe4e4;
+}
 
 @media (max-width: 720px) {
   .nav { padding: 20px 5vw; }
