@@ -45,13 +45,19 @@
         {% endif %}
       </div>
     </section>
-    <section class="camera-section" id="camera">
-      <div class="camera-copy"><p class="eyebrow"><span></span> The tool behind the work</p><h2>Camera<br><em>Sony Alpha IV.</em></h2><p>The full-frame companion I trust for fast, expressive portraiture. Precision when it matters; invisible when the moment arrives.</p><dl class="camera-specs"><div><dt>Sensor</dt><dd>33 MP Full-frame</dd></div><div><dt>Lens</dt><dd>FE 24–105mm F4 G OSS</dd></div><div><dt>Focus</dt><dd>Real-time Eye AF</dd></div></dl></div>
-      <div class="camera-stage" id="cameraStage"><div class="camera-glow"></div><div class="camera-model" id="cameraModel" aria-label="Interactive 3D illustration of a Sony Alpha IV camera"><div class="camera-top"><span></span></div><div class="camera-body"><div class="camera-logo">SONY</div><div class="alpha-mark">α</div><div class="shutter"></div><div class="camera-grip"></div><div class="lens-mount"><div class="lens"><div class="lens-glass"><span></span></div></div></div><div class="model-name">α7 IV</div></div></div><p class="drag-hint"><span>↔</span> Move to explore</p></div>
+    <section class="camera-section" id="camera" aria-label="Interactive Sony Alpha IV 3D model">
+      <div class="camera-title"><p class="eyebrow"><span></span> Interactive object</p><h2>Sony Alpha IV</h2></div>
+      <div class="camera-stage" id="cameraStage">
+        <canvas id="cameraCanvas" aria-label="Rotatable 3D camera model"></canvas>
+        <div class="camera-loading" id="cameraLoading">Loading 3D model…</div>
+        <p class="drag-hint"><span>↔</span> Drag to rotate · scroll to zoom</p>
+        <button class="camera-reset" id="cameraReset" type="button">Reset view</button>
+      </div>
     </section>
     <section class="closing-section"><p class="eyebrow"><span></span> Your story, next</p><h2>Let’s make something<br><em>worth remembering.</em></h2><a class="primary-action" href="/book">Book your session <span>↗</span></a></section>
   </main>
   <footer class="site-footer"><a class="wordmark" href="/"><span class="wordmark-mark">KP</span><span>{{ studio_name }}</span></a><p>Portrait &amp; editorial photography<br>Bergamo, Italy</p><a href="/book">Get in touch ↗</a><span>© <span id="year"></span> {{ studio_name }}</span></footer>
   <script src="/static/portfolio.js" defer></script>
+  <script type="module" src="/static/camera-3d.js"></script>
 </body>
 </html>
