@@ -25,5 +25,25 @@
     });
     stage.addEventListener('pointerleave', () => { camera.style.setProperty('--rotate-y', '-8deg'); camera.style.setProperty('--rotate-x', '4deg'); });
   }
-  document.getElementById('year').textContent = new Date().getFullYear();
+  const year = document.getElementById('year');
+  if (year) year.textContent = new Date().getFullYear();
+
+  const menuButton = document.getElementById('mobileMenu');
+  const publicLinks = document.getElementById('publicLinks');
+  menuButton?.addEventListener('click', () => publicLinks?.classList.toggle('open'));
+
+  const slides = [...document.querySelectorAll('.home-slideshow .slide')];
+  const current = document.getElementById('slideCurrent');
+  const bar = document.getElementById('slideBar');
+  if (slides.length > 1) {
+    let index = 0;
+    const showNext = () => {
+      slides[index].classList.remove('active');
+      index = (index + 1) % slides.length;
+      slides[index].classList.add('active');
+      if (current) current.textContent = String(index + 1).padStart(2, '0');
+      if (bar) { bar.style.animation = 'none'; void bar.offsetWidth; bar.style.animation = ''; }
+    };
+    setInterval(showNext, 5500);
+  }
 })();
