@@ -1,38 +1,57 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="noir">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{ studio_name }}</title>
+  <meta name="description" content="Portrait and editorial photography in Bergamo, Italy.">
+  <title>{{ studio_name }} — Portrait &amp; Editorial Photography</title>
   <link rel="stylesheet" href="/static/style.css">
 </head>
-<body>
-  <div class="nav">
-    <div class="brand">{{ studio_name }}</div>
-    <div>
-      <a href="/">Work</a>
-      <a href="/book" class="cta">Book a session</a>
+<body class="portfolio-page">
+  <header class="site-header">
+    <a class="wordmark" href="/" aria-label="Home"><span class="wordmark-mark">KP</span><span>{{ studio_name }}</span></a>
+    <nav class="site-nav" aria-label="Main navigation"><a href="#work">Portfolio</a><a href="#camera">My camera</a><a href="/book">Contact</a></nav>
+    <div class="header-actions">
+      <button class="theme-trigger" id="themeTrigger" type="button" aria-expanded="false" aria-controls="themeMenu"><span class="theme-swatch" aria-hidden="true"></span><span>Style</span></button>
+      <div class="theme-menu" id="themeMenu" role="menu" aria-label="Choose a visual style">
+        <button type="button" data-set-theme="noir" role="menuitem"><i class="swatch-noir"></i>Noir</button>
+        <button type="button" data-set-theme="editorial" role="menuitem"><i class="swatch-editorial"></i>Editorial</button>
+        <button type="button" data-set-theme="gallery" role="menuitem"><i class="swatch-gallery"></i>Gallery</button>
+      </div>
+      <a class="pill-link" href="/book">Book a shoot <span>↗</span></a>
     </div>
-  </div>
-
-  <div class="hero">
-    <h1>{{ tagline or "Photographs that hold onto a moment." }}</h1>
-    <p>A selected collection of recent work. Every session is culled, edited,
-       and delivered to a private gallery — book a date below to start yours.</p>
-  </div>
-
-  <div class="grid">
-    {% if images %}
-      {% for img in images %}
-        <a href="/media/_portfolio/{{ img }}" target="_blank">
-          <img src="/media/_portfolio/{{ img }}" alt="Portfolio photo" loading="lazy">
-        </a>
-      {% endfor %}
-    {% else %}
-      <p style="grid-column: 1/-1; color: var(--smoke); padding: 2vw 0;">
-        No portfolio images yet — add some from the admin panel after your first shoot.
-      </p>
-    {% endif %}
-  </div>
+  </header>
+  <main>
+    <section class="portfolio-hero">
+      <div class="hero-copy">
+        <p class="eyebrow"><span></span> Portraits · Editorial · Bergamo</p>
+        <h1>{{ tagline or "Light, character & a little bit of magic." }}</h1>
+        <p class="hero-intro">Portraits that feel cinematic, honest, and unmistakably you. Crafted with intention from the first frame to the final edit.</p>
+        <div class="hero-links"><a class="primary-action" href="#work">Explore the work <span>↓</span></a><a class="text-action" href="/book">Plan your session <span>↗</span></a></div>
+      </div>
+      <div class="hero-visual" aria-label="Featured portrait">
+        {% if images %}<img src="/media/_portfolio/{{ images[0] }}" alt="Featured portrait by {{ studio_name }}">{% else %}<div class="portrait-placeholder portrait-one" role="img" aria-label="Add a featured portrait from the admin panel"><span>YOUR<br>IMAGE</span></div>{% endif %}
+        <div class="frame-number">01 / FEATURED</div><div class="hero-caption">Available for portraits<br>and creative collaborations</div>
+      </div>
+      <p class="vertical-note">Independent photographer · Italy</p>
+    </section>
+    <section class="work-section" id="work">
+      <div class="section-heading"><div><p class="eyebrow"><span></span> Selected work</p><h2>Stories in stills.</h2></div><p>A curated selection of portraits, fashion stories, and quiet moments. Select an image to see it full size.</p></div>
+      <div class="portfolio-grid">
+        {% if images %}
+          {% for img in images %}<a class="portfolio-card card-{{ (loop.index0 % 6) + 1 }}" href="/media/_portfolio/{{ img }}" target="_blank" rel="noopener"><img src="/media/_portfolio/{{ img }}" alt="Portrait photograph {{ loop.index }}" loading="lazy"><span class="card-meta"><b>{{ "%02d" | format(loop.index) }}</b><em>Portrait study</em><i>↗</i></span></a>{% endfor %}
+        {% else %}
+          {% for item in [('01','Editorial portrait','portrait-two'),('02','Soft daylight','portrait-three'),('03','Street story','portrait-four'),('04','Studio study','portrait-five'),('05','Quiet moments','portrait-six')] %}<a class="portfolio-card card-{{ loop.index }} placeholder-card" href="/admin" aria-label="Add {{ item[1] }} from the admin panel"><div class="portrait-placeholder {{ item[2] }}"><span>ADD<br>PHOTO</span></div><span class="card-meta"><b>{{ item[0] }}</b><em>{{ item[1] }}</em><i>＋</i></span></a>{% endfor %}
+        {% endif %}
+      </div>
+    </section>
+    <section class="camera-section" id="camera">
+      <div class="camera-copy"><p class="eyebrow"><span></span> The tool behind the work</p><h2>Camera<br><em>Sony Alpha IV.</em></h2><p>The full-frame companion I trust for fast, expressive portraiture. Precision when it matters; invisible when the moment arrives.</p><dl class="camera-specs"><div><dt>Sensor</dt><dd>33 MP Full-frame</dd></div><div><dt>Lens</dt><dd>FE 24–105mm F4 G OSS</dd></div><div><dt>Focus</dt><dd>Real-time Eye AF</dd></div></dl></div>
+      <div class="camera-stage" id="cameraStage"><div class="camera-glow"></div><div class="camera-model" id="cameraModel" aria-label="Interactive 3D illustration of a Sony Alpha IV camera"><div class="camera-top"><span></span></div><div class="camera-body"><div class="camera-logo">SONY</div><div class="alpha-mark">α</div><div class="shutter"></div><div class="camera-grip"></div><div class="lens-mount"><div class="lens"><div class="lens-glass"><span></span></div></div></div><div class="model-name">α7 IV</div></div></div><p class="drag-hint"><span>↔</span> Move to explore</p></div>
+    </section>
+    <section class="closing-section"><p class="eyebrow"><span></span> Your story, next</p><h2>Let’s make something<br><em>worth remembering.</em></h2><a class="primary-action" href="/book">Book your session <span>↗</span></a></section>
+  </main>
+  <footer class="site-footer"><a class="wordmark" href="/"><span class="wordmark-mark">KP</span><span>{{ studio_name }}</span></a><p>Portrait &amp; editorial photography<br>Bergamo, Italy</p><a href="/book">Get in touch ↗</a><span>© <span id="year"></span> {{ studio_name }}</span></footer>
+  <script src="/static/portfolio.js" defer></script>
 </body>
 </html>
