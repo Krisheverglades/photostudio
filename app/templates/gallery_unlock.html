@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Open your private gallery</title><link rel="stylesheet" href="/static/style.css?v=20260913-stable"></head>
+<body class="studio-page"><main class="panel" style="max-width:560px;margin:10vh auto;padding:32px">
+<div class="eyebrow">Private collection</div><h1>{{ shoot_title }}</h1>
+<p>Enter the six-digit one-time code from your email. It expires after 24 hours and can be used once. This browser stays signed in for seven days.</p>
+{% if error %}<p role="alert">{{ error }}</p>{% endif %}
+<form method="post" action="/gallery/{{ access_key }}/unlock"><div class="field">
+<label for="code">One-time code</label><input id="code" name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required autofocus></div>
+<button class="btn">Open gallery</button></form><p>Need a fresh code? Contact the studio.</p></main></body></html>
