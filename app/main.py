@@ -582,6 +582,13 @@ def update_appointment(
 @app.middleware("http")
 async def private_response_headers(request: Request, call_next):
     response = await call_next(request)
+    if response.headers.get("content-type", "").startswith("text/html"):
+        body = b"".join([chunk async for chunk in response.body_iterator])
+        assets = b'<link rel="stylesheet" href="/static/glass-background.css?v=20260913-glass"><script src="/static/glass-background.js?v=20260913-glass" defer></script>'
+        body = body.replace(b"</head>", assets + b"</head>", 1)
+        from starlette.responses import Response
+        response = Response(body, status_code=response.status_code, headers=dict(response.headers), background=response.background)
+        response.headers["content-length"] = str(len(body))
     if request.url.path.startswith(("/gallery/", "/admin", "/studio", "/dashboard")):
         response.headers['Cache-Control'] = 'no-store'
         response.headers['Referrer-Policy'] = 'no-referrer'
@@ -704,3 +711,9 @@ def configure_editor(pw: str = Form(...), tool: str = Form('retouch_image'),
     save_settings({'enabled': bool(enabled), 'tool': tool, 'instructions': instructions[:4000]})
     return RedirectResponse('/admin/editor?' + urlencode({'pw': pw,
         'message': 'MCP tool connected. Edits will be sent to this provider.' if enabled else 'Built-in tone and color editing enabled; external AI is off.'}), status_code=303)
+
+
+@app.get("/api/public-backgrounds")
+def public_backgrounds():
+    from urllib.parse import quote
+    return {"images": ["/media/_portfolio/" + quote(name, safe="") for name in get_portfolio_images(18)]}
