@@ -47,3 +47,35 @@
     setInterval(showNext, 5500);
   }
 })();
+// Keep decorative portrait motion independent from the foreground DOM.
+(() => {
+  const background = document.querySelector('.home-slideshow');
+  if (!background) return;
+  const slides = [...background.querySelectorAll('.slide')];
+  const ready = img => img.complete ? Promise.resolve() : new Promise(resolve => {
+    img.addEventListener('load', resolve, {once:true});
+    img.addEventListener('error', resolve, {once:true});
+  });
+  Promise.all(slides.map(ready)).then(() => {
+    let portraits = slides.filter(img => img.naturalHeight > img.naturalWidth && img.naturalWidth > 0);
+    if (!portraits.length) return;
+    while (portraits.length < 3) portraits = portraits.concat(portraits).slice(0, 3);
+    const window = document.createElement('div'); window.className = 'portrait-window';
+    const track = document.createElement('div'); track.className = 'portrait-track';
+    [...portraits, ...portraits].forEach(source => {
+      const frame = document.createElement('div'); frame.className = 'portrait-frame';
+      const img = document.createElement('img'); img.src = source.src; img.alt = '';
+      frame.append(img); track.append(frame);
+    });
+    track.style.setProperty('--scroll-duration', `${Math.max(30, portraits.length * 9)}s`);
+    window.append(track); background.prepend(window);
+    background.classList.add('has-portraits'); document.body.classList.add('portrait-landing');
+    const progress = document.querySelector('.slide-progress');
+    if (progress) progress.hidden = true;
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'portrait-pause';
+    let paused = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const update = () => { background.classList.toggle('motion-paused', paused); button.textContent = paused ? 'Play photo motion' : 'Pause photo motion'; button.setAttribute('aria-pressed', String(paused)); };
+    button.addEventListener('click', () => { paused = !paused; update(); });
+    document.body.append(button); update();
+  });
+})();
