@@ -154,3 +154,34 @@ def test_mcp_adapter_contract_and_failure():
         edited = retouch.MCPRetouchProvider(config).process(Image.open(io.BytesIO(photo())), 'unused')
         assert edited.size == (64,80)
     assert isinstance(retouch.get_retouch_provider(), retouch.NoopRetouchProvider)
+
+
+def test_one_code_cannot_be_consumed_concurrently():
+    from concurrent.futures import ThreadPoolExecutor
+    shoot = create()
+    code = delivery.issue_code(shoot.id)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        tokens = list(pool.map(lambda _: delivery.verify_code(shoot.id, code), range(2)))
+    assert sum(token is not None for token in tokens) == 1
+
+
+def test_additive_legacy_database_migration():
+    import sqlite3
+    from sqlmodel import create_engine
+    path = TEST_ROOT / 'legacy.db'
+    con = sqlite3.connect(path)
+    con.executescript("""
+      CREATE TABLE shoot (id INTEGER PRIMARY KEY, client_id INTEGER, title VARCHAR,
+        access_key VARCHAR, folder_path VARCHAR, total_photos INTEGER, best_count INTEGER,
+        status VARCHAR, created_at DATETIME, email_sent BOOLEAN);
+      INSERT INTO shoot VALUES (1,1,'Existing shoot','existing-key','/private',120,100,'ready',NULL,1);
+      CREATE TABLE appointment (id INTEGER PRIMARY KEY);
+    """)
+    con.commit(); con.close()
+    with patch.object(database, 'engine', create_engine(f'sqlite:///{path}')):
+        database.init_db()
+    con = sqlite3.connect(path)
+    row = con.execute('SELECT title,best_count,edit_count,approved FROM shoot').fetchone()
+    assert row == ('Existing shoot',100,20,0)
+    assert 'status' in [r[1] for r in con.execute('PRAGMA table_info(appointment)')]
+    con.close()
