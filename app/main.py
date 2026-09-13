@@ -4,12 +4,14 @@ import secrets
 import shutil
 import io
 import zipfile
+import json
+from pathlib import Path
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 
 from dotenv import load_dotenv
 from fastapi import Cookie, FastAPI, Form, HTTPException, Request, UploadFile
-from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlmodel import select
@@ -21,6 +23,7 @@ load_dotenv()
 from app import calendar_utils, email_utils
 from app.database import Appointment, Client, GalleryFeedback, Shoot, get_session, init_db
 from app.pipeline import process_shoot
+from app import delivery, jobs
 from app.version import get_version
 
 app = FastAPI(title="Studio")
@@ -33,7 +36,7 @@ os.makedirs(os.path.join(PROCESSED_ROOT, "_portfolio"), exist_ok=True)
 
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
-app.mount("/media", StaticFiles(directory=PROCESSED_ROOT), name="media")
+app.mount("/media/_portfolio", StaticFiles(directory=os.path.join(PROCESSED_ROOT, "_portfolio")), name="media")
 
 STUDIO_NAME = os.getenv("STUDIO_NAME", "Your Studio Name")
 STUDIO_TAGLINE = os.getenv("STUDIO_TAGLINE", "")
@@ -70,6 +73,7 @@ def admin_redirect(password: str, email_status: str = "") -> RedirectResponse:
 @app.on_event("startup")
 def on_startup():
     init_db()
+    jobs.resume()
     os.makedirs(UPLOAD_ROOT, exist_ok=True)
     os.makedirs(PROCESSED_ROOT, exist_ok=True)
 
@@ -210,9 +214,14 @@ def client_gallery(request: Request, access_key: str):
             select(GalleryFeedback).where(GalleryFeedback.shoot_id == shoot.id)
         ).all()
 
-    best_dir = os.path.join(shoot.folder_path, "best")
-    images = sorted(os.listdir(best_dir)) if os.path.isdir(best_dir) else []
-    rel_dir = os.path.relpath(best_dir, PROCESSED_ROOT).replace(os.sep, "/")
+    if not delivery.authorized(request, shoot):
+        return templates.TemplateResponse("gallery_unlock.html", {"request": request,
+            "shoot_title": shoot.title, "access_key": access_key, "error": ""})
+    rows = delivery.selected(shoot)
+    images = [row["filename"] for row in rows]
+    highlights = images[:10]
+    random.shuffle(highlights)
+    rel_dir = ""
     feedback_by_file = {item.filename: item for item in feedback}
 
     return templates.TemplateResponse(
@@ -223,6 +232,7 @@ def client_gallery(request: Request, access_key: str):
             "client_name": client.name,
             "shoot_title": shoot.title,
             "images": images,
+            "highlights": highlights,
             "media_dir": rel_dir,
             "status": shoot.status,
             "access_key": access_key,
@@ -234,6 +244,7 @@ def client_gallery(request: Request, access_key: str):
 
 @app.post("/gallery/{access_key}/feedback")
 def save_gallery_feedback(
+    request: Request,
     access_key: str,
     filename: str = Form(...),
     is_favorite: str = Form(""),
@@ -243,7 +254,9 @@ def save_gallery_feedback(
         shoot = session.exec(select(Shoot).where(Shoot.access_key == access_key)).first()
         if not shoot:
             raise HTTPException(status_code=404, detail="Gallery not found")
+        delivery.require_access(request, shoot)
         safe_filename = os.path.basename(filename.replace("\\", "/"))
+        delivery.selected_path(shoot, safe_filename)
         best_dir = os.path.abspath(os.path.join(shoot.folder_path, "best"))
         image_path = os.path.abspath(os.path.join(best_dir, safe_filename))
         if os.path.commonpath([image_path, best_dir]) != best_dir or not os.path.isfile(image_path):
@@ -265,17 +278,19 @@ def save_gallery_feedback(
 
 
 @app.get("/gallery/{access_key}/download-all")
-def download_gallery(access_key: str):
+def download_gallery(request: Request, access_key: str):
     with get_session() as session:
         shoot = session.exec(select(Shoot).where(Shoot.access_key == access_key)).first()
         if not shoot:
             raise HTTPException(status_code=404, detail="Gallery not found")
+        delivery.require_access(request, shoot)
         best_dir = os.path.abspath(os.path.join(shoot.folder_path, "best"))
         if not os.path.isdir(best_dir):
             raise HTTPException(status_code=404, detail="Gallery is not ready")
         archive = io.BytesIO()
         with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as zip_file:
-            for filename in sorted(os.listdir(best_dir)):
+            for row in delivery.selected(shoot):
+                filename = row["filename"]
                 path = os.path.abspath(os.path.join(best_dir, filename))
                 if os.path.isfile(path) and os.path.commonpath([path, best_dir]) == best_dir:
                     zip_file.write(path, arcname=filename)
@@ -359,15 +374,22 @@ async def create_shoot(
     client_email: str = Form(""),
     shoot_title: str = Form(...),
     best_count: int = Form(100),
+    edit_count: int = Form(20),
     style: str = Form("natural"),
     target_aspect: str = Form(""),  # e.g. "4:5", "1:1", "16:9", or blank = no crop
     files: list[UploadFile] = None,
 ):
     if pw != ADMIN_PASSWORD:
         raise HTTPException(status_code=403, detail="Bad admin password")
-    if best_count < 1:
-        raise HTTPException(status_code=400, detail="Select at least one photo.")
-    best_count = min(best_count, 100)
+    if not 1 <= best_count <= 100 or not 0 <= edit_count <= best_count:
+        raise HTTPException(400, "Choose 1–100 selected photos and 0–selection count edits")
+    if style not in {"natural", "warm", "moody", "bright_airy"} or target_aspect not in {"", "4:5", "1:1", "16:9", "3:2"}:
+        raise HTTPException(400, "Invalid editing options")
+    if not files or not client_name.strip() or not shoot_title.strip():
+        raise HTTPException(400, "Add a client, shoot title, and photos")
+    allowed = {".jpg", ".jpeg", ".png", ".webp", ".tif", ".tiff"}
+    if any(Path(f.filename or "").suffix.lower() not in allowed for f in files):
+        raise HTTPException(400, "Use JPEG, PNG, WebP, or TIFF. Export camera RAW files first.")
     client_email = client_email.strip()
 
     with get_session() as session:
@@ -381,15 +403,16 @@ async def create_shoot(
             session.refresh(client)
 
         safe_title = "".join(c if c.isalnum() or c in "-_ " else "_" for c in shoot_title)
-        input_dir = os.path.join(UPLOAD_ROOT, f"{client.id}_{safe_title}")
-        output_dir = os.path.join(PROCESSED_ROOT, f"{client.id}_{safe_title}")
+        folder = f"{client.id}_{safe_title[:70]}_{secrets.token_hex(8)}"
+        input_dir = os.path.join(UPLOAD_ROOT, folder)
+        output_dir = os.path.join(PROCESSED_ROOT, folder)
         os.makedirs(input_dir, exist_ok=True)
 
-        for f in files or []:
+        for index, f in enumerate(files or []):
             filename = os.path.basename((f.filename or "").replace("\\", "/"))
             if not filename:
                 continue
-            dest = os.path.join(input_dir, filename)
+            dest = os.path.join(input_dir, f"{index + 1:05d}_{filename}")
             with open(dest, "wb") as out:
                 shutil.copyfileobj(f.file, out)
 
@@ -399,50 +422,18 @@ async def create_shoot(
             folder_path=output_dir,
             total_photos=len(files or []),
             best_count=best_count,
-            status="processing",
+            status="queued",
+            edit_count=edit_count,
+            input_path=input_dir,
+            style=style,
+            aspect=target_aspect,
         )
         session.add(shoot)
         session.commit()
         session.refresh(shoot)
 
-    aspect_ratio = None
-    if target_aspect and ":" in target_aspect:
-        w, h = target_aspect.split(":")
-        aspect_ratio = float(w) / float(h)
-
-    # NOTE: for real shoot volumes (hundreds-thousands of photos), move this
-    # to a background task/queue (e.g. Celery, RQ, or FastAPI BackgroundTasks)
-    # instead of running inline in the request.
-    scores = process_shoot(
-        input_dir=input_dir,
-        output_dir=output_dir,
-        best_count=best_count,
-        target_aspect=aspect_ratio,
-        style=style,
-    )
-
-    with get_session() as session:
-        shoot = session.get(Shoot, shoot.id)
-        shoot.status = "ready"
-        shoot.best_count = min(best_count, len(scores))
-        access_key = ensure_gallery_key(shoot)
-        session.add(shoot)
-        session.commit()
-        session.refresh(shoot)
-
-    sent = (
-        email_utils.send_gallery_email(client_email, client_name, shoot_title, access_key)
-        if client_email
-        else False
-    )
-
-    with get_session() as session:
-        shoot = session.get(Shoot, shoot.id)
-        shoot.email_sent = sent
-        session.add(shoot)
-        session.commit()
-
-    return admin_redirect(pw, "sent" if sent else "failed")
+    jobs.enqueue(shoot.id)
+    return RedirectResponse(url=f"/studio/portfolio?{urlencode({'pw': pw})}", status_code=303)
 
 
 @app.post("/admin/upload_portfolio")
@@ -470,7 +461,7 @@ async def upload_portfolio(
             shutil.copyfileobj(file.file, output)
         uploaded += 1
 
-    return admin_redirect(pw, "sent" if sent else "failed")
+    return admin_redirect(pw)
 
 
 @app.post("/admin/add_to_portfolio")
@@ -504,6 +495,8 @@ def delete_shoot(pw: str = Form(...), shoot_id: int = Form(...)):
         if not shoot:
             raise HTTPException(status_code=404, detail="Shoot not found")
 
+        if shoot.status in {"queued", "processing"}:
+            raise HTTPException(409, "Wait for processing to finish before deleting")
         shoot_folder = os.path.abspath(shoot.folder_path)
         processed_root = os.path.abspath(PROCESSED_ROOT)
         if os.path.commonpath([shoot_folder, processed_root]) != processed_root:
@@ -541,19 +534,23 @@ def send_gallery_email(
         client = session.get(Client, shoot.client_id)
         if not client:
             raise HTTPException(status_code=404, detail="Client not found")
+        if not shoot.approved or not delivery.selected(shoot):
+            raise HTTPException(400, "Review and approve the selection before sending")
         client.email = client_email
         access_key = ensure_gallery_key(shoot)
         session.add(client)
         session.add(shoot)
         session.commit()
+        code = delivery.issue_code(shoot.id)
         sent = email_utils.send_gallery_email(
-            client_email, client.name, shoot.title, access_key
+            client_email, client.name, shoot.title, access_key, code
         )
         shoot.email_sent = sent
+        shoot.status = "delivered" if sent else "ready"
         session.add(shoot)
         session.commit()
 
-    return admin_redirect(pw)
+    return admin_redirect(pw, "sent" if sent else "failed")
 
 
 @app.post("/admin/update_appointment")
@@ -574,3 +571,129 @@ def update_appointment(
         session.add(appointment)
         session.commit()
     return admin_redirect(pw)
+
+@app.middleware("http")
+async def private_response_headers(request: Request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith(("/gallery/", "/admin", "/studio", "/dashboard")):
+        response.headers['Cache-Control'] = 'no-store'
+        response.headers['Referrer-Policy'] = 'no-referrer'
+    return response
+
+
+@app.post('/gallery/{access_key}/unlock')
+def unlock_gallery(request: Request, access_key: str, code: str = Form(...)):
+    with get_session() as session:
+        shoot = session.exec(select(Shoot).where(Shoot.access_key == access_key)).first()
+    if not shoot or not shoot.approved:
+        raise HTTPException(404, 'Gallery not ready')
+    token = delivery.verify_code(shoot.id, code.strip())
+    if not token:
+        return templates.TemplateResponse('gallery_unlock.html', {'request': request,
+            'shoot_title': shoot.title, 'access_key': access_key,
+            'error': 'Code is invalid, expired, or already used. Ask the studio for a new code.'}, status_code=401)
+    response = RedirectResponse(f'/gallery/{access_key}', status_code=303)
+    response.set_cookie('gallery_session', token, max_age=7 * 86400, httponly=True,
+                        secure=request.url.scheme == 'https', samesite='strict', path=f'/gallery/{access_key}')
+    return response
+
+
+@app.get('/gallery/{access_key}/files/{filename}')
+def gallery_file(request: Request, access_key: str, filename: str, download: bool = False):
+    with get_session() as session:
+        shoot = session.exec(select(Shoot).where(Shoot.access_key == access_key)).first()
+    if not shoot:
+        raise HTTPException(404, 'Gallery not found')
+    delivery.require_access(request, shoot)
+    path = delivery.selected_path(shoot, filename)
+    return FileResponse(path, filename=filename if download else None)
+
+
+def admin_shoot(pw, shoot_id):
+    if pw != ADMIN_PASSWORD:
+        raise HTTPException(403, 'Bad admin password')
+    with get_session() as session:
+        shoot = session.get(Shoot, shoot_id)
+    if not shoot:
+        raise HTTPException(404, 'Shoot not found')
+    return shoot
+
+
+@app.get('/admin/shoot/{shoot_id}', response_class=HTMLResponse)
+def review_shoot(request: Request, shoot_id: int, pw: str = ''):
+    shoot = admin_shoot(pw, shoot_id)
+    with get_session() as session:
+        client = session.get(Client, shoot.client_id)
+    return templates.TemplateResponse('shoot_review.html', {'request': request, 'shoot': shoot,
+        'client': client, 'pw': pw, 'photos': delivery.selected(shoot)})
+
+
+@app.get('/admin/shoot/{shoot_id}/files/{filename}')
+def review_file(shoot_id: int, filename: str, pw: str = ''):
+    shoot = admin_shoot(pw, shoot_id)
+    return FileResponse(delivery.selected_path(shoot, filename))
+
+
+@app.post('/admin/shoot/{shoot_id}/approve')
+def approve_shoot(shoot_id: int, pw: str = Form(...), filenames: list[str] = Form(...)):
+    shoot = admin_shoot(pw, shoot_id)
+    if shoot.status not in {'review', 'ready'} or (shoot.email_sent and shoot.approved):
+        raise HTTPException(409, 'Only undelivered completed shoots can be approved')
+    rows = delivery.selected(shoot)
+    names = set(filenames)
+    if not names or not names.issubset({r['filename'] for r in rows}):
+        raise HTTPException(400, 'Choose photographs from this selection')
+    chosen = [r for r in rows if r['filename'] in names]
+    manifest = Path(shoot.folder_path) / 'selection.json'
+    manifest.with_suffix('.tmp').write_text(json.dumps(chosen))
+    os.replace(manifest.with_suffix('.tmp'), manifest)
+    with get_session() as session:
+        current = session.get(Shoot, shoot_id)
+        current.email_sent = False
+        current.approved = True
+        current.status = 'ready'
+        current.best_count = len(chosen)
+        current.edit_count = sum(r['edited'] for r in chosen)
+        session.add(current)
+        session.commit()
+    return RedirectResponse(f'/admin/shoot/{shoot_id}?{urlencode({"pw": pw})}', status_code=303)
+
+
+@app.post('/admin/shoot/{shoot_id}/retry')
+def retry_shoot(shoot_id: int, pw: str = Form(...)):
+    shoot = admin_shoot(pw, shoot_id)
+    if shoot.status != 'failed' or not shoot.input_path:
+        raise HTTPException(409, 'Only failed uploads can be retried')
+    with get_session() as session:
+        current = session.get(Shoot, shoot_id)
+        current.status = 'queued'
+        session.add(current)
+        session.commit()
+    jobs.enqueue(shoot_id)
+    return RedirectResponse(f'/admin/shoot/{shoot_id}?{urlencode({"pw": pw})}', status_code=303)
+
+@app.get('/admin/editor', response_class=HTMLResponse)
+def editor_page(request: Request, pw: str = '', message: str = ''):
+    if pw != ADMIN_PASSWORD:
+        raise HTTPException(403, 'Bad admin password')
+    from app.retouch import settings
+    return templates.TemplateResponse('editor.html', {'request': request, 'pw': pw,
+        'config': settings(), 'configured': bool(os.getenv('RETOUCH_MCP_URL')), 'message': message})
+
+
+@app.post('/admin/editor')
+def configure_editor(pw: str = Form(...), tool: str = Form('retouch_image'),
+                     instructions: str = Form(...), enabled: str = Form('')):
+    if pw != ADMIN_PASSWORD:
+        raise HTTPException(403, 'Bad admin password')
+    from app.retouch import MCPConnection, save_settings
+    if enabled:
+        try:
+            with MCPConnection() as connection:
+                connection.check_tool(tool)
+        except Exception:
+            return RedirectResponse('/admin/editor?' + urlencode({'pw': pw,
+                'message': 'Connection failed. Check the server endpoint, credentials, and compatible image tool. Settings were not changed.'}), status_code=303)
+    save_settings({'enabled': bool(enabled), 'tool': tool, 'instructions': instructions[:4000]})
+    return RedirectResponse('/admin/editor?' + urlencode({'pw': pw,
+        'message': 'MCP tool connected. Edits will be sent to this provider.' if enabled else 'Built-in tone and color editing enabled; external AI is off.'}), status_code=303)
