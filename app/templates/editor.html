@@ -1,0 +1,11 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Editing connection</title><link rel="stylesheet" href="/static/style.css?v=20260913-stable"></head>
+<body class="studio-page"><main class="panel" style="max-width:760px;margin:5vh auto"><a href="/studio/portfolio?pw={{ pw|urlencode }}">← Shoots</a><h1>Editing connection</h1>
+<p>Current editor: <strong>{{ 'Connected MCP tool' if config.enabled else 'Built-in automatic tone, color, and sharpening' }}</strong></p>
+<p>Built-in editing uses image-processing rules. AI masking and retouching require a compatible external editor connection.</p>
+{% if message %}<p role="status">{{ message }}</p>{% endif %}
+{% if not configured %}<p>External editor not connected. Add your editor’s HTTPS MCP endpoint and credentials to the server configuration before enabling it here.</p>{% endif %}
+<form method="post" action="/admin/editor"><input type="hidden" name="pw" value="{{ pw }}">
+<div class="field"><label for="tool">MCP image tool name</label><input id="tool" name="tool" value="{{ config.tool }}" required></div>
+<div class="field"><label for="instructions">Editing instructions</label><textarea id="instructions" name="instructions" rows="5" maxlength="4000" required>{{ config.instructions }}</textarea></div>
+<label><input type="checkbox" name="enabled" value="true" {% if config.enabled %}checked{% endif %} {% if not configured %}disabled{% endif %}> Use the external editor for selected edits</label>
+<p>Enabling sends selected photographs to your configured provider. Test connection checks tool availability without sending photographs.</p><button class="btn">Test connection &amp; save</button></form></main></body></html>
