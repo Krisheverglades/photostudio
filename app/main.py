@@ -5,6 +5,7 @@ import shutil
 import io
 import zipfile
 import json
+import tempfile
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
@@ -287,7 +288,7 @@ def download_gallery(request: Request, access_key: str):
         best_dir = os.path.abspath(os.path.join(shoot.folder_path, "best"))
         if not os.path.isdir(best_dir):
             raise HTTPException(status_code=404, detail="Gallery is not ready")
-        archive = io.BytesIO()
+        archive = tempfile.SpooledTemporaryFile(max_size=8 * 1024 * 1024, mode="w+b")
         with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as zip_file:
             for row in delivery.selected(shoot):
                 filename = row["filename"]
@@ -295,8 +296,14 @@ def download_gallery(request: Request, access_key: str):
                 if os.path.isfile(path) and os.path.commonpath([path, best_dir]) == best_dir:
                     zip_file.write(path, arcname=filename)
         archive.seek(0)
+    def archive_chunks():
+        try:
+            while chunk := archive.read(1024 * 1024):
+                yield chunk
+        finally:
+            archive.close()
     return StreamingResponse(
-        archive,
+        archive_chunks(),
         media_type="application/zip",
         headers={"Content-Disposition": f'attachment; filename="{shoot.access_key}-gallery.zip"'},
     )
