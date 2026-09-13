@@ -216,7 +216,7 @@ def auto_edit(
 
     os.makedirs(os.path.dirname(dst_path), exist_ok=True)
     save_kwargs = {}
-    if source_format in {"JPEG", "JPG"}:
+    if source_format in {"JPEG", "JPG"} or os.path.splitext(dst_path)[1].lower() in {".jpg", ".jpeg"}:
         save_kwargs = {"quality": 100, "subsampling": 0}
     img.save(dst_path, **save_kwargs)
 
