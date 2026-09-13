@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="noir"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ studio_name }} — Photography</title><link rel="stylesheet" href="/static/style.css"></head>
+<html lang="en" data-theme="noir"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ studio_name }} — Photography</title><link rel="stylesheet" href="/static/style.css?v=20260913-portraits"></head>
 <body class="landing-page">
   <div class="home-slideshow" aria-hidden="true">{% for img in images %}<img src="/media/_portfolio/{{ img }}" alt="" class="slide{% if loop.first %} active{% endif %}">{% endfor %}<div class="slide-shade"></div></div>
   <header class="public-nav"><a class="wordmark" href="/"><span class="wordmark-mark">KP</span><span>{{ studio_name }}</span></a><button class="mobile-menu" id="mobileMenu" type="button" aria-label="Open menu">Menu</button><nav id="publicLinks"><a href="/portfolio">Portfolio</a><a href="/camera">3D Camera</a><a href="/book">Book</a><a href="/admin">Admin</a></nav></header>
   <main class="landing-content"><p class="eyebrow"><span></span> Portrait photographer · Bergamo</p><h1>{{ tagline or "Stories, held in light." }}</h1><p>Portraits and editorial photography with an honest, cinematic feel.</p><div><a class="primary-action" href="/portfolio">View portfolio <span>↗</span></a><a class="home-secondary" href="/book">Book a session</a></div></main>
   <div class="slide-progress"><span id="slideCurrent">01</span><i><b id="slideBar"></b></i><span>{{ "%02d" | format(images|length if images else 1) }}</span></div>
-  <script src="/static/portfolio.js" defer></script>
+  <script src="/static/portfolio.js?v=20260913-portraits" defer></script>
 </body></html>
