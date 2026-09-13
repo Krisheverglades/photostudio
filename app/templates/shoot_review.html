@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Review {{ shoot.title }}</title><link rel="stylesheet" href="/static/style.css?v=20260913-stable"></head>
+<body class="studio-page"><header class="panel"><a href="/studio/portfolio?pw={{ pw|urlencode }}">← Shoots</a>
+<h1>{{ shoot.title }}</h1><p>{{ client.name }} · {{ shoot.status }} · {{ shoot.best_count }} selected · {{ shoot.edit_count }} edited</p>
+{% if shoot.status in ['queued','processing'] %}<p role="status">Your photos are being processed in the background. Refresh this page to check progress.</p><a class="btn" href="/admin/shoot/{{ shoot.id }}?pw={{ pw|urlencode }}">Refresh status</a>{% endif %}
+{% if shoot.error %}<p role="alert">{{ shoot.error }}</p><form method="post" action="/admin/shoot/{{ shoot.id }}/retry"><input type="hidden" name="pw" value="{{ pw }}"><button class="btn">Retry processing</button></form>{% endif %}</header>
+{% if photos %}
+<form method="post" action="/admin/shoot/{{ shoot.id }}/approve">
+<input type="hidden" name="pw" value="{{ pw }}">
+<div class="panel"><h2>Review your selection</h2><p>Ranked strongest first. Uncheck any photograph you do not want delivered. Originals and rejected files stay private.</p>
+{% if not shoot.email_sent or not shoot.approved %}<button class="btn">Approve selected photographs</button>{% else %}<p>This collection has been delivered.</p>{% endif %}</div>
+<div class="grid">{% for photo in photos %}<article class="proof-card">
+<img src="/admin/shoot/{{ shoot.id }}/files/{{ photo.filename|urlencode }}?pw={{ pw|urlencode }}" alt="Selected photo {{ loop.index }}" loading="lazy" style="object-fit:contain;height:320px;width:100%">
+<label><input type="checkbox" name="filenames" value="{{ photo.filename }}" checked {% if shoot.email_sent and shoot.approved %}disabled{% endif %}> {{ loop.index }} · {{ 'Edited' if photo.edited else 'Original colors' }}</label>
+<p>{{ photo.flags|join(', ') }}</p></article>{% endfor %}</div></form>
+{% if shoot.approved %}<section class="panel"><h2>Send to client</h2><p>Send the approved collection and a fresh one-time code. Resending replaces the previous code and sign-in.</p>
+<form method="post" action="/admin/send_gallery_email"><input type="hidden" name="pw" value="{{ pw }}"><input type="hidden" name="shoot_id" value="{{ shoot.id }}"><label for="email">Client email</label><input id="email" type="email" name="client_email" value="{{ client.email }}" required><button class="btn">Email link + OTP</button></form></section>{% endif %}
+{% endif %}</body></html>

@@ -4,29 +4,52 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{ shoot_title }} — {{ studio_name }}</title>
-  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/style.css?v=20260913-stable">
 </head>
 <body>
   <div class="nav">
-    <div class="brand">{{ studio_name }}</div>
+    <a class="brand" href="/"><span class="brand-mark">/</span>{{ studio_name }}</a>
     <div><span class="tag ready">Private gallery</span></div>
   </div>
 
   <div class="hero">
+    <div class="eyebrow">A private collection for {{ client_name }}</div>
     <h1>{{ shoot_title }}</h1>
-    <p>Hi {{ client_name }} — here are your favorites, selected and edited from the full shoot.
-       Click any photo to view full size and save it.</p>
+    <p>Hi {{ client_name }} — your photographs are ready. Click any image to view it full size or download a copy.</p>
   </div>
 
+  {% if highlights %}
+  <section class="gallery-highlights" aria-label="Ten best photographs">
+    <img id="highlight-photo" src="/gallery/{{ access_key }}/files/{{ highlights[0]|urlencode }}" alt="A highlight from {{ shoot_title }}" style="width:100%;height:65vh;object-fit:contain">
+    <button type="button" class="btn btn-outline" id="pause-highlights">Pause slideshow</button>
+  </section>
+  <script>
+  const highlights = {{ highlights|tojson }};
+  const base = {{ ('/gallery/' ~ access_key ~ '/files/')|tojson }};
+  let position = 0, playing = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const pause = document.getElementById('pause-highlights');
+  pause.textContent = playing ? 'Pause slideshow' : 'Play slideshow';
+  pause.onclick = () => { playing = !playing; pause.textContent = playing ? 'Pause slideshow' : 'Play slideshow'; };
+  setInterval(() => { if (playing && !document.hidden) { position = (position + 1) % highlights.length; document.getElementById('highlight-photo').src = base + encodeURIComponent(highlights[position]); } }, 5500);
+  </script>
+  {% endif %}
+  <div class="section-heading">
+    <h2>Your photographs</h2>
+    <span>{{ images|length }} selected · full-resolution downloads</span>
+    <a class="btn btn-outline" href="/gallery/{{ access_key }}/download-all">Download all</a>
+  </div>
   <div class="grid">
     {% if images %}
       {% for img in images %}
-        <a href="/media/{{ media_dir }}/{{ img }}" download>
-          <img src="/media/{{ media_dir }}/{{ img }}" alt="{{ shoot_title }} photo" loading="lazy">
-        </a>
+        <div class="proof-card">
+          <a href="/gallery/{{ access_key }}/files/{{ img|urlencode }}" target="_blank" download>
+          <img src="/gallery/{{ access_key }}/files/{{ img|urlencode }}" alt="{{ shoot_title }} photo" loading="lazy">
+          </a>
+          <div class="download-label">Open / download full size ↗</div>
+        </div>
       {% endfor %}
     {% else %}
-      <p style="grid-column: 1/-1; color: var(--smoke); padding: 2vw 0;">
+      <p class="empty-state">
         Your gallery is still being prepared — check back shortly.
       </p>
     {% endif %}

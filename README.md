@@ -1,16 +1,65 @@
 # Studio — automated photo delivery & booking site
 
-An end-to-end system for a solo/small photography business:
+A photography portfolio, booking site, and private delivery workspace.
 
-- **Upload** a shoot's raw photos through an admin page
-- **Auto-crop + auto-edit** every photo (exposure, color, sharpening; optional style preset)
-- **Auto-select the best N** (default 100) using sharpness/exposure/eyes-open scoring,
-  deduplicated across burst sequences
-- **Email the client automatically** with a private gallery link + unique access key
-- **Client gallery** — client opens their link, sees only their best shots, can download
-- **Portfolio site** — pick any delivered photos into a public homepage grid
-- **Booking page** — client picks an open slot; it's synced to your Google Calendar,
-  and you get a confirmation email sent to the client automatically
+- Create a client/person and named shoot; bulk upload JPEG, PNG, WebP, or TIFF.
+- Select 1–100 strongest photos (100 default); edit 0–selection count (20 default).
+- Processing runs on one background worker. Queued/unfinished jobs persist in SQLite and resume on restart.
+- Review the ranked selection, remove unwanted photos, and approve before delivery.
+- Email the approved gallery and a six-digit single-use OTP, valid for 24 hours.
+- Client sessions last seven days; resending rotates the OTP and invalidates previous sessions.
+- Individual and ZIP downloads use the approved manifest, capped at 100 distinct photos.
+  Edited files replace originals within that count. Originals/rejects are never publicly served.
+- Each client gallery shows its ten highest-ranked selected photos in a randomized slideshow.
+- Portrait homepage images appear in three uncropped, gently scrolling columns with a pause control.
+- Existing public portfolio, independent booking, calendar sync, dashboard, and camera routes remain.
+
+Camera RAW formats such as ARW/CR3/NEF must be exported to a supported image format before upload.
+Unedited selections preserve their colors, but delivery files are converted to JPEG without original metadata.
+Automated culling is a sharpness/exposure/face heuristic, not a trained aesthetic ranking model.
+Built-in editing applies tone, color presets and sharpening; it does not provide AI masking.
+
+## External AI / Photoshop-compatible MCP editor
+
+`/admin/editor` exposes connection status, tool name, editing instructions, and enable/disable controls.
+A real editing service is required; no Photoshop or Aftershoot account is bundled or connected automatically.
+Configure these server environment variables:
+
+```dotenv
+RETOUCH_MCP_URL=https://your-editor.example/mcp
+RETOUCH_MCP_TOKEN=your-provider-token
+```
+
+The connector uses Streamable HTTP JSON-RPC (JSON or SSE responses), initializes an MCP session,
+checks `tools/list`, and invokes the chosen tool with `image_base64`, `mime_type`, and `instructions`.
+The tool must accept these parameters and return an MCP `image` content block containing the edited image.
+An editor exposing a different schema needs a bridge that translates this contract to its own tools.
+The provider determines whether masking, relighting, skin retouch, or other AI operations are supported.
+Connection testing lists tools only; it sends no client photographs. Enabling the connection authorizes
+selected edit images to be sent to that provider. Tool failures mark the job failed for admin retry;
+there is no silent fallback labeled as AI. The full photo pipeline was tested with a mocked editor,
+not a live external editing account. Use the [MCP documentation](https://modelcontextprotocol.io/docs)
+when adapting an editor.
+
+## Delivery security and migration
+
+Schema changes are additive. Existing shoots and originals remain intact. Previously delivered
+key-only galleries now need admin review and a new OTP email before client access.
+Five incorrect attempts lock an OTP. Codes are PBKDF2-hashed and consumed atomically; session tokens
+are random and stored as hashes. Only manually published `_portfolio` images remain on `/media`.
+Use HTTPS for production client delivery; the current VM's HTTP URL does not encrypt credentials or photos.
+Back up `data/studio.db`, application code, and the persistent photo volumes before deployment.
+Run a single application worker with this local queue; use an external job queue before scaling workers.
+
+## Tests
+
+```bash
+pip install -r requirements.txt pytest httpx
+python -m pytest tests/test_delivery.py -q
+```
+
+Tests use temporary databases/photos and mocked email, checking selection/edit counts, corrupt images,
+OTP expiry/reuse/attempt limits, cross-gallery isolation, old public-path blocking, and approved ZIP contents.
 
 ## Run it locally
 
@@ -45,8 +94,7 @@ booking sync runs automatically — no browser needed again (it auto-refreshes).
 - **Duplicates** — a perceptual hash groups burst sequences so you don't get
   10 near-identical shots in your top 100; only the best of each burst competes.
 
-This is a solid heuristic baseline (same idea as what Aftershoot/Imagen use
-under the hood), fully open for you to tune the weights in `score_image()`,
+This is a heuristic baseline, open for you to tune the weights in `score_image()`,
 or later replace with a model trained on photos you've personally picked
 in the past — that's the natural upgrade path once you have a library of
 "what I actually chose" data.
@@ -130,12 +178,24 @@ Every `git push` to `main`:
 
 No manual SSH needed after the one-time setup above.
 
+### Docker deployment
+
+For a server already running another application on port 8000, the included
+`docker-compose.yml` exposes Studio on port 8001 and persists the database,
+original uploads, processed galleries, portfolio files, and Google token under
+`data/`. Copy `.env.example` to `.env`, fill in the production values, then run:
+
+```bash
+docker compose up -d --build
+```
+
+The application is then available at `http://SERVER_IP:8001`. Configure your
+reverse proxy to forward your domain to port 8001 before using HTTPS.
+
 ## Scaling notes
 
-- For real shoot volumes (hundreds–thousands of RAW files), move
-  `process_shoot()` in `main.py` off the request thread and into a background
-  job (FastAPI `BackgroundTasks`, or a queue like Celery/RQ) so uploads don't
-  time out.
+- Processing currently uses a persistent SQLite-backed single-worker queue. For large shoots or
+  multiple application replicas, move jobs to a dedicated queue such as Celery/RQ.
 - Swap local folder storage (`app/processed/`) for S3 or Azure Blob by
   replacing the file read/write calls in `pipeline.py` and `main.py` —
   the rest of the app (DB, email, gallery links) doesn't need to change.

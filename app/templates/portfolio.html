@@ -1,38 +1,4 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{ studio_name }}</title>
-  <link rel="stylesheet" href="/static/style.css">
-</head>
-<body>
-  <div class="nav">
-    <div class="brand">{{ studio_name }}</div>
-    <div>
-      <a href="/">Work</a>
-      <a href="/book" class="cta">Book a session</a>
-    </div>
-  </div>
-
-  <div class="hero">
-    <h1>{{ tagline or "Photographs that hold onto a moment." }}</h1>
-    <p>A selected collection of recent work. Every session is culled, edited,
-       and delivered to a private gallery — book a date below to start yours.</p>
-  </div>
-
-  <div class="grid">
-    {% if images %}
-      {% for img in images %}
-        <a href="/media/_portfolio/{{ img }}" target="_blank">
-          <img src="/media/_portfolio/{{ img }}" alt="Portfolio photo" loading="lazy">
-        </a>
-      {% endfor %}
-    {% else %}
-      <p style="grid-column: 1/-1; color: var(--smoke); padding: 2vw 0;">
-        No portfolio images yet — add some from the admin panel after your first shoot.
-      </p>
-    {% endif %}
-  </div>
-</body>
-</html>
+<html lang="en" data-theme="noir"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Portfolio — {{ studio_name }}</title><link rel="stylesheet" href="/static/style.css"></head>
+<body class="portfolio-page gallery-page"><header class="public-nav solid"><a class="wordmark" href="/"><span class="wordmark-mark">KP</span><span>{{ studio_name }}</span></a><button class="mobile-menu" id="mobileMenu" type="button">Menu</button><nav id="publicLinks"><a href="/">Home</a><a class="active" href="/portfolio">Portfolio</a><a href="/camera">3D Camera</a><a href="/book">Book</a><a href="/admin">Admin</a></nav></header>
+<main class="public-gallery"><header><p class="eyebrow"><span></span> Selected work</p><h1>Portfolio</h1><p>A focused collection of portrait and editorial work.</p></header><div class="clean-gallery">{% for img in images %}<a href="/media/_portfolio/{{ img }}" target="_blank" rel="noopener"><img src="/media/_portfolio/{{ img }}" alt="Portfolio photograph {{ loop.index }}" loading="lazy"><span>{{ "%02d" | format(loop.index) }}</span></a>{% else %}<div class="gallery-empty"><h2>Your portfolio is ready for images.</h2><p>Add finished photographs through the admin workspace.</p><a class="primary-action" href="/admin">Open admin</a></div>{% endfor %}</div></main><script src="/static/portfolio.js" defer></script></body></html>

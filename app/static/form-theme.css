@@ -1,0 +1,32 @@
+/* UI UX Pro Max: monochrome palette, visible focus, stable form surfaces.
+   Load after style.css. Background motion must never cover editable content. */
+:root, html[data-theme] {
+  --charcoal:#18181b; --ivory:#fafafa; --amber:#f8fafc;
+  --smoke:#b5bac3; --page:#18181b; --surface:#27272a;
+  --ink:#fafafa; --muted:#b5bac3; --line:#52525b;
+  --accent:#f8fafc; --accent-ink:#18181b;
+}
+body.studio-page { position:relative; isolation:isolate; background:#18181b; }
+.studio-backdrop { z-index:-1!important; pointer-events:none!important; }
+.studio-backdrop * { pointer-events:none!important; }
+.studio-page:focus-within .studio-backdrop img { animation-play-state:paused!important; }
+.studio-page > :not(.studio-backdrop) { position:relative; z-index:1; }
+.studio-page .panel { background:#27272a; border:1px solid #52525b; border-radius:18px; padding:32px; margin:32px auto; width:calc(100% - 32px); }
+.panel-wide { max-width:1120px; overflow-x:auto; }
+.field input, .field textarea, .field select, .inline-form select {
+  background:#18181b; color:#fafafa; border:1px solid #71717a;
+  border-radius:8px; min-height:46px; padding:12px; font-size:16px;
+}
+.field label { color:#e4e4e7; font-size:14px; }
+input:focus-visible, textarea:focus-visible, select:focus-visible,
+button:focus-visible, a:focus-visible { outline:3px solid #fafafa!important; outline-offset:3px; }
+.btn { min-height:44px; border-radius:8px; }
+.dashboard-stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; max-width:1120px; margin:32px auto; padding:0 16px; }
+.stat-card { padding:24px; background:#27272a; border:1px solid #52525b; border-radius:12px; }
+.stat-card strong,.stat-card small,.stat-label { display:block; }
+.stat-card strong { font-size:32px; }
+.admin-header { max-width:1120px; margin:40px auto; padding:0 24px; }
+.studio-page .section-heading { margin-bottom:24px; }
+.studio-page .section-heading h2 { font-size:28px; }
+@media(max-width:700px){.dashboard-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.studio-page .panel{padding:24px}.nav{flex-wrap:wrap;gap:16px}.nav a{margin-left:12px}}
+@media(prefers-reduced-motion:reduce){.studio-backdrop img{animation:none!important;opacity:0!important}.studio-backdrop img:first-child{opacity:1!important}}

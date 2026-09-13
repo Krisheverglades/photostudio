@@ -15,11 +15,14 @@ model trained on photos you've personally picked in the past.
 from __future__ import annotations
 
 import os
+import shutil
 from dataclasses import dataclass, field
 
 import cv2
 import numpy as np
 from PIL import Image, ImageEnhance, ImageOps
+
+from app.retouch import apply_retouch
 
 # Haar cascades ship with opencv-python-headless; used for a simple,
 # dependency-light face/eye check. Swap for a proper face-detection
@@ -186,6 +189,7 @@ def auto_edit(
       trained model — this is the deterministic baseline.
     """
     img = Image.open(src_path)
+    source_format = img.format
     img = ImageOps.exif_transpose(img)  # respect camera orientation
 
     if target_aspect:
@@ -207,10 +211,14 @@ def auto_edit(
     if p["warmth"]:
         img = _adjust_warmth(img, p["warmth"])
 
+    img = apply_retouch(img, src_path)
     img = ImageEnhance.Sharpness(img).enhance(1.15)
 
     os.makedirs(os.path.dirname(dst_path), exist_ok=True)
-    img.save(dst_path, quality=95)
+    save_kwargs = {}
+    if source_format in {"JPEG", "JPG"} or os.path.splitext(dst_path)[1].lower() in {".jpg", ".jpeg"}:
+        save_kwargs = {"quality": 100, "subsampling": 0}
+    img.save(dst_path, **save_kwargs)
 
 
 def _smart_crop(img: Image.Image, target_aspect: float) -> Image.Image:
@@ -259,43 +267,48 @@ def _adjust_warmth(img: Image.Image, amount: int) -> Image.Image:
 
 
 def process_shoot(
-    input_dir: str,
-    output_dir: str,
-    best_count: int = 100,
-    target_aspect: float | None = None,
-    style: str = "natural",
+    input_dir: str, output_dir: str, best_count: int = 100,
+    target_aspect: float | None = None, style: str = "natural", edit_count: int = 20,
 ) -> list[ImageScore]:
-    """
-    Full pipeline for one client shoot:
-      1. score every photo
-      2. auto-crop + auto-edit every photo into output_dir/all/
-      3. select the top `best_count` and copy them into output_dir/best/
-    Returns the ranked scores for the whole shoot.
-    """
+    """Rank first; edit only the requested subset. Originals remain private."""
+    import json
+    from dataclasses import asdict
+    if not 1 <= best_count <= 100 or not 0 <= edit_count <= best_count:
+        raise ValueError("Select 1–100 photos and an edit count between zero and selection count")
     exts = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".webp"}
-    files = [
-        os.path.join(input_dir, f)
-        for f in sorted(os.listdir(input_dir))
-        if os.path.splitext(f)[1].lower() in exts
-    ]
-
-    scores = [score_image(f) for f in files]
-
-    all_dir = os.path.join(output_dir, "all")
+    files = [os.path.join(input_dir, f) for f in sorted(os.listdir(input_dir))
+             if os.path.splitext(f)[1].lower() in exts]
+    scores = []
+    for path in files:
+        try:
+            score = score_image(path)
+            if not any("unreadable" in flag.lower() for flag in score.flags):
+                scores.append(score)
+        except (ValueError, OSError, cv2.error):
+            continue
+    if not scores:
+        raise ValueError("No readable supported photos were uploaded")
+    selected = sorted(select_best(scores, count=best_count), key=lambda s: s.total, reverse=True)
+    staging = os.path.join(output_dir, "best.pending")
+    shutil.rmtree(staging, ignore_errors=True)
+    os.makedirs(staging, exist_ok=True)
+    manifest = []
+    for index, score in enumerate(selected):
+        # Browser-compatible outputs without embedded GPS metadata.
+        name = f"{index + 1:03d}_" + os.path.splitext(os.path.basename(score.path))[0] + ".jpg"
+        destination = os.path.join(staging, name)
+        edited = index < edit_count
+        if edited:
+            auto_edit(score.path, destination, target_aspect, style)
+        else:
+            with Image.open(score.path) as source:
+                ImageOps.exif_transpose(source).convert("RGB").save(destination, "JPEG", quality=95)
+        manifest.append({"filename": name, "source": os.path.basename(score.path),
+                         "score": round(score.total, 4), "flags": score.flags, "edited": edited})
     best_dir = os.path.join(output_dir, "best")
-    os.makedirs(all_dir, exist_ok=True)
-    os.makedirs(best_dir, exist_ok=True)
-
-    for s in scores:
-        fname = os.path.basename(s.path)
-        auto_edit(s.path, os.path.join(all_dir, fname), target_aspect, style)
-
-    best = select_best(scores, count=best_count)
-    for s in best:
-        fname = os.path.basename(s.path)
-        edited_path = os.path.join(all_dir, fname)
-        if os.path.exists(edited_path):
-            Image.open(edited_path).save(os.path.join(best_dir, fname), quality=95)
-
-    scores.sort(key=lambda s: s.total, reverse=True)
-    return scores
+    shutil.rmtree(best_dir, ignore_errors=True)
+    os.replace(staging, best_dir)
+    with open(os.path.join(output_dir, "selection.json.tmp"), "w") as handle:
+        json.dump(manifest, handle)
+    os.replace(os.path.join(output_dir, "selection.json.tmp"), os.path.join(output_dir, "selection.json"))
+    return sorted(scores, key=lambda s: s.total, reverse=True)
