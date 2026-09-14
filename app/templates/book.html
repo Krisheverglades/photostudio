@@ -7,44 +7,49 @@
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <div class="nav">
-    <div class="brand"><a href="/" style="color:inherit;">{{ studio_name }}</a></div>
-    <div><a href="/">Work</a></div>
-  </div>
+  <header class="nav">
+    <div class="brand"><a href="/">{{ studio_name }}</a></div>
+    <nav class="nav-links" aria-label="Main navigation">
+      <a href="/" class="nav-link">Work</a>
+      <a href="/book" class="nav-link active" aria-current="page">Book a session</a>
+    </nav>
+  </header>
 
-  <div class="panel">
-    <h2>Book a session</h2>
-    <p style="color: var(--smoke); margin: 10px 0 30px;">
-      Pick an open slot. Times shown are the next 14 days, greyed slots are already booked.
-    </p>
+  <main>
+    <div class="panel">
+      <h2>Book a session</h2>
+      <p style="color: var(--smoke); margin: 10px 0 30px;">
+        Pick an open slot. Times shown are the next 14 days, greyed slots are already booked.
+      </p>
 
-    {% if request.query_params.get('confirmed') %}
-      <div class="notice">Your session is booked — a confirmation email is on its way.</div>
-    {% endif %}
+      {% if request.query_params.get('confirmed') %}
+        <div class="notice">Your session is booked — a confirmation email is on its way.</div>
+      {% endif %}
 
-    <form method="post" action="/book" id="bookForm">
-      <div class="field">
-        <label>Your name</label>
-        <input type="text" name="name" required>
-      </div>
-      <div class="field">
-        <label>Email</label>
-        <input type="email" name="email" required>
-      </div>
-      <div class="field">
-        <label>Anything I should know? (location, occasion, headcount...)</label>
-        <textarea name="notes" rows="3"></textarea>
-      </div>
+      <form method="post" action="/book" id="bookForm">
+        <div class="field">
+          <label>Your name</label>
+          <input type="text" name="name" required>
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input type="email" name="email" required>
+        </div>
+        <div class="field">
+          <label>Anything I should know? (location, occasion, headcount...)</label>
+          <textarea name="notes" rows="3"></textarea>
+        </div>
 
-      <div class="field">
-        <label>Choose a time</label>
-        <div class="slots" id="slotContainer"></div>
-        <input type="hidden" name="start_time" id="start_time" required>
-      </div>
+        <div class="field">
+          <label>Choose a time</label>
+          <div class="slots" id="slotContainer"></div>
+          <input type="hidden" name="start_time" id="start_time" required>
+        </div>
 
-      <button type="submit" class="btn">Confirm booking</button>
-    </form>
-  </div>
+        <button type="submit" class="btn">Confirm booking</button>
+      </form>
+    </div>
+  </main>
 
   <script>
     // Busy ranges pulled server-side from Google Calendar via freebusy API.
@@ -61,7 +66,7 @@
     const container = document.getElementById('slotContainer');
     const hiddenInput = document.getElementById('start_time');
     const now = new Date();
-    const hours = [9, 11, 13, 15, 17]; // studio's bookable hours — adjust to taste
+    const hours = [9, 11, 13, 15, 17];
 
     for (let d = 1; d <= 14; d++) {
       const day = new Date(now);
