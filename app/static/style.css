@@ -2,14 +2,14 @@
    Color: charcoal #14181C (bg), ivory #F2EDE4 (text/light bg),
           amber #C9A45C (accent, darkroom safelight), moss #48594F (secondary),
           smoke #8B8F94 (muted)
-   Type:  "Fraunces" (display serif, photographic/editorial), "Inter" (body/UI)
-   Layout: asymmetric contact-sheet-style grid, left-aligned text, full-bleed photos
+   Type: "Fraunces" (display serif, photographic/editorial), "Inter" (body/UI)
 */
 
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap');
 
 :root {
   --charcoal: #14181c;
+  --charcoal-glass: rgba(20, 24, 28, 0.88);
   --ivory: #f2ede4;
   --amber: #c9a45c;
   --moss: #48594f;
@@ -34,17 +34,88 @@ h1, h2, h3, .display {
 }
 
 a { color: var(--amber); text-decoration: none; }
-a:hover { text-decoration: underline; }
+a:hover { text-decoration: none; }
 
+/* Identical public title bar on every public page. Only .active changes. */
 .nav {
-  display: flex;
-  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  padding: 28px 6vw;
+  gap: 32px;
+  min-height: 112px;
+  padding: 20px 6vw;
+  background:
+    linear-gradient(100deg, rgba(201, 164, 92, 0.12), transparent 42%),
+    var(--charcoal-glass);
+  border-bottom: 1px solid rgba(242, 237, 228, 0.16);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
-.nav .brand { font-family: 'Fraunces', serif; font-size: 1.3rem; }
-.nav a { color: var(--ivory); margin-left: 28px; font-size: 0.95rem; }
-.nav a.cta { color: var(--amber); }
+
+.nav .brand {
+  min-width: 0;
+  color: var(--ivory);
+  font-family: 'Fraunces', serif;
+  font-size: clamp(1.75rem, 3.3vw, 3.15rem);
+  font-weight: 600;
+  line-height: 0.9;
+  letter-spacing: -0.045em;
+  text-transform: uppercase;
+  text-shadow: 0 5px 24px rgba(0, 0, 0, 0.45);
+}
+
+.nav .brand a { color: inherit; }
+
+.nav .brand::after {
+  content: 'PHOTOGRAPHY';
+  display: block;
+  margin-top: 9px;
+  color: var(--amber);
+  font-family: 'Inter', sans-serif;
+  font-size: clamp(0.58rem, 0.8vw, 0.72rem);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.38em;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 46px;
+  padding: 10px 17px;
+  color: var(--ivory);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transition: color 180ms ease, border-color 180ms ease, background 180ms ease, transform 180ms ease;
+}
+
+.nav-link:hover {
+  color: var(--amber);
+  border-color: rgba(201, 164, 92, 0.38);
+  transform: translateY(-2px);
+}
+
+.nav-link.active {
+  color: var(--charcoal);
+  background: var(--amber);
+  border-color: var(--amber);
+  box-shadow: 0 7px 22px rgba(201, 164, 92, 0.23);
+}
 
 .hero {
   padding: 6vw 6vw 3vw;
@@ -70,11 +141,6 @@ a:hover { text-decoration: underline; }
 .grid img:hover { filter: grayscale(0%); }
 .grid a:nth-child(5n+1) { grid-column: span 2; }
 .grid a:nth-child(5n+1) img { height: 340px; }
-
-@media (max-width: 720px) {
-  .grid { grid-template-columns: repeat(2, 1fr); }
-  .grid a:nth-child(5n+1) { grid-column: span 2; }
-}
 
 .panel {
   max-width: 560px;
@@ -152,3 +218,17 @@ th { color: var(--smoke); font-weight: 500; }
   color: var(--smoke);
 }
 .tag.ready { border-color: var(--moss); color: #8bbf9f; }
+
+@media (max-width: 720px) {
+  .nav {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    min-height: 0;
+    padding-block: 18px;
+  }
+  .nav .brand { font-size: clamp(1.65rem, 8vw, 2.35rem); }
+  .nav-links { width: 100%; }
+  .nav-link { flex: 1; justify-content: center; }
+  .grid { grid-template-columns: repeat(2, 1fr); }
+  .grid a:nth-child(5n+1) { grid-column: span 2; }
+}
